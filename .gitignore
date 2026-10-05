@@ -1,0 +1,15 @@
+# PyCharm
+.idea/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated results
+results/*.png
+results/*.jpg
+results/*.jpeg
+
+# Environment / secrets
+.env
