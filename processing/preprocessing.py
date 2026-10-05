@@ -16,3 +16,10 @@ def Sharpen(image):
     ])
 
     return cv2.filter2D(image, -1, kernel)
+
+
+
+def ApplyClahe(image):
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+    return clahe.apply(image)
