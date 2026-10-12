@@ -13,3 +13,8 @@ results/*.jpeg
 
 # Environment / secrets
 .env
+
+# Local development / test data
+experiments/
+results/
+images/
