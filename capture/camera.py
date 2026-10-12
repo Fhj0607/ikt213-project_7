@@ -1,70 +1,32 @@
 import cv2
 
-from processing.preprocessing import (
-    ToGrayscale,
-    ResizeImage
-)
+class Camera:
+    def __init__(self, camera_index=0):
+        self.camera_index = camera_index
+        self.cap = None
 
-from processing.analysis import IsBlurry
+    def start(self):
 
+        if self.cap is not None and self.cap.isOpened():
+            return
 
-def LiveCapture(cameraIndex=0, threshold=100.0):
+        self.cap = cv2.VideoCapture(self.camera_index)
 
-    camera = cv2.VideoCapture(cameraIndex)
+        if not self.cap.isOpened():
+            self.stop()
+            raise RuntimeError('Could not start camera.')
+    def read_frame(self):
+        if self.cap is None or not self.cap.isOpened():
+            raise RuntimeError('Camera is not initialized.')
 
-    if not camera.isOpened():
-        raise RuntimeError(
-            "Could not open camera"
-        )
+        success, frame = self.cap.read()
 
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+        if not success or frame is None:
+            raise RuntimeError('Could not read frame.')
 
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        return frame
 
-    try:
-        while True:
-
-            success, frame = camera.read()
-
-            if not success:
-                print("Could not read camera frame")
-                break
-
-            smallFrame = ResizeImage(frame,320,240)
-
-            grayFrame = ToGrayscale(smallFrame)
-
-            blurry, score = IsBlurry(grayFrame, threshold)
-
-            if blurry:
-                status = "BLURRY"
-                color = (0, 0, 255)
-
-            else:
-                status = "SHARP"
-                color = (0, 255, 0)
-
-            cv2.putText(
-                frame,
-                f"{status} | Score: {score:.1f}",
-                (20, 35),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                color,
-                2
-            )
-
-            cv2.imshow(
-                "SnapPrint Camera",
-                frame
-            )
-
-            key = cv2.waitKey(1) & 0xFF
-
-            if key == ord("q"):
-                break
-
-    finally:
-        camera.release()
-
-        cv2.destroyAllWindows()
+    def stop(self):
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None

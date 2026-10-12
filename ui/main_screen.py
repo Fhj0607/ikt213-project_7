@@ -1,125 +1,208 @@
-import os
+import cv2
+import numpy as np
 
-from kivy.app import App
+from kivy.clock import Clock
+from kivy.graphics.texture import Texture
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
-from kivy.uix.scrollview import ScrollView
+from concurrent.futures import ThreadPoolExecutor
 
-from ocr.paddle_ocr import ExtractText
-
-
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
-
-IMAGE_FOLDER = os.path.join(BASE_DIR, "images")
+from capture.camera import Camera
+from quality.assessment import QualityAssessment
+from pipeline import Pipeline
 
 
-class SnapPrintApp(App):
+class MainScreen(BoxLayout):
 
-    def build(self):
-        main_layout = BoxLayout(
-            orientation="horizontal"
-        )
+    def __init__(self, **kwargs):
+        super().__init__(orientation="vertical", **kwargs)
 
-        menu = BoxLayout(
-            orientation="vertical",
-            size_hint_x=0.25,
-            size_hint_y=None
-        )
+        self.camera = Camera()
+        self.quality = QualityAssessment()
+        self.pipeline = Pipeline()
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
-        menu.bind(
-            minimum_height=menu.setter("height")
-        )
+        self.state = "SCANNING"
+        self.captured_frame = None
+        self.scene_change_count = 0
+        self.shutting_down = False
+        self.camera_event = None
+        self.quality_event = None
+        self.current_frame = None
 
-        for filename in os.listdir(IMAGE_FOLDER):
+        self.preview = Image()
+        self.add_widget(self.preview)
 
-            if filename.lower().endswith(
-                (".jpg", ".png", ".jpeg")
-            ):
-                button = Button(
-                    text=filename,
-                    size_hint_y=None,
-                    height=50
-                )
-
-                button.bind(
-                    on_press=lambda instance, name=filename:
-                    self.select_image(name)
-                )
-
-                menu.add_widget(button)
-
-        scroll = ScrollView()
-        scroll.add_widget(menu)
-
-        right_layout = BoxLayout(
-            orientation="vertical"
-        )
-
-        self.image_display = Image(
-            size_hint_y=0.6
-        )
-
-        text_scroll = ScrollView(
-            size_hint_y=0.4
-        )
-
-        self.ocr_text = Label(
-            text="Select an image",
+        self.quality_label = Label(
+            text="Waiting for camera...",
             size_hint_y=None,
-            text_size=(None, None),
-            halign="left",
-            valign="top"
+            height=100
         )
 
-        self.ocr_text.bind(
-            width=lambda instance, width:
-            setattr(
-                instance,
-                "text_size",
-                (width, None)
+        self.add_widget(self.quality_label)
+
+    def start_camera(self):
+        self.camera.start()
+
+        self.camera_event = Clock.schedule_interval(
+            self.update_frame, 1 / 30
+        )
+
+        self.quality_event = Clock.schedule_interval(
+            self.check_quality, 0.5
+        )
+
+    def update_frame(self, dt):
+        frame = self.camera.read_frame()
+
+        # store original frame
+        self.current_frame = frame
+
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        texture = Texture.create(
+            size=(rgb.shape[1], rgb.shape[0]),
+            colorfmt="rgb"
+        )
+
+        texture.blit_buffer(
+            rgb.tobytes(),
+            colorfmt="rgb",
+            bufferfmt="ubyte"
+        )
+
+        texture.flip_vertical()
+
+        self.preview.texture = texture
+
+    def scene_difference(self, frame1, frame2):
+
+        gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+
+        gray1 = cv2.resize(gray1, (320,240))
+        gray2 = cv2.resize(gray2, (320,240))
+
+        difference= cv2.absdiff(gray1, gray2)
+
+        return float(np.mean(difference))
+
+    def check_quality(self, dt):
+
+        if self.current_frame is None:
+            return
+
+        frame = self.current_frame.copy()
+
+        # OCR is already running
+        if self.state == "PROCESSING":
+            return
+
+        # wait until the scene changes
+        if self.state == "WAITING":
+
+            difference = self.scene_difference(
+                frame,
+                self.captured_frame
             )
+
+            if difference > 15.0:
+                self.scene_change_count += 1
+            else:
+                self.scene_change_count = 0
+
+            if self.scene_change_count >= 3:
+                self.state = "SCANNING"
+                self.quality.reset()
+                self.scene_change_count = 0
+
+                print("New scene detected. Resuming scanning.")
+
+            return
+
+        # assess image quality
+        result = self.quality.assess(frame)
+
+        self.quality_label.text = (
+            f"Sharpness: {result['sharpness']}\n"
+            f"Brightness: {result['brightness']}\n"
+            f"Contrast: {result['contrast']}\n"
+            f"Stable frames: {result['stable_count']}\n"
+            f"Status: {result['reason']}"
         )
 
-        self.ocr_text.bind(
-            texture_size=lambda instance, size:
-            setattr(
-                instance,
-                "height",
-                size[1]
-            )
+        if not result["passed"]:
+            return
+
+        # suitable frame captured
+        self.captured_frame = frame.copy()
+        self.state = "PROCESSING"
+
+        self.quality_label.text = "Processing image..."
+
+        print("Image captured. Starting pipeline.")
+
+        future = self.executor.submit(
+            self.pipeline.process,
+            self.captured_frame
         )
 
-        text_scroll.add_widget(
-            self.ocr_text
+        future.add_done_callback(self.processing_finished)
+
+    def processing_finished(self, future):
+
+        try:
+            text = future.result()
+            error = None
+
+        except Exception as e:
+            text = ""
+            error = str(e)
+
+        if self.shutting_down:
+            return
+
+        Clock.schedule_once(
+            lambda dt: self.display_result(text,error)
         )
 
-        right_layout.add_widget(
-            self.image_display
+    def display_result(self, text, error=None):
+
+        if self.shutting_down:
+            return
+
+        if error:
+            print("Pipeline error: ", error)
+            self.quality_label.text = "Processing failed."
+        elif text.strip():
+            print("Recognized text:")
+            print(text)
+
+            self.quality_label.text = "Text recognized!"
+
+        else:
+            print("No readable text detected.")
+            self.quality_label.text = "no readable text found."
+
+        self.scene_change_count = 0
+        self.state = "WAITING"
+
+    def stop_camera(self):
+
+        self.shutting_down = True
+
+        if self.camera_event is not None:
+            self.camera_event.cancel()
+            self.camera_event = None
+
+        if self.quality_event is not None:
+            self.quality_event.cancel()
+            self.quality_event = None
+
+        self.camera.stop()
+
+        self.executor.shutdown(
+            wait=False,
+            cancel_futures=True
         )
-
-        right_layout.add_widget(
-            text_scroll
-        )
-
-        main_layout.add_widget(scroll)
-        main_layout.add_widget(right_layout)
-
-        return main_layout
-
-
-    def select_image(self, filename):
-
-        image_path = os.path.join(IMAGE_FOLDER, filename)
-
-        self.image_display.source = image_path
-        self.image_display.reload()
-
-        self.ocr_text.text = "Processing..."
-
-        text = ExtractText(image_path)
-
-        self.ocr_text.text = text
