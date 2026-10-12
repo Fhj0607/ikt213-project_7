@@ -8,6 +8,11 @@ def ToGrayscale(image):
 
 
 
+def ResizeImage(image, width, height):
+    return cv2.resize(image,(width, height))
+
+
+
 def Sharpen(image):
     kernel = np.array([
         [0, -1, 0],

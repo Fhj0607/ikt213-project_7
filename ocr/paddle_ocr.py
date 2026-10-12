@@ -1,4 +1,6 @@
+import cv2
 from paddleocr import PaddleOCR
+
 
 
 ocr = PaddleOCR(
@@ -10,8 +12,22 @@ ocr = PaddleOCR(
 )
 
 
-def extract_text(image_path):
-    results = ocr.predict(image_path)
+
+def PrepareForOCR(image):
+    if len(image.shape) == 2:
+        return cv2.cvtColor(
+            image,
+            cv2.COLOR_GRAY2BGR
+        )
+
+    return image
+
+
+
+def ExtractText(image):
+    image = PrepareForOCR(image)
+
+    results = ocr.predict(image)
 
     texts = []
 

@@ -2,8 +2,10 @@ import cv2
 
 
 
-def BlurScore(image):
-    return cv2.Laplacian(image, cv2.CV_64F).var()
+def IsBlurry(image, threshold=100.0):
+    score = cv2.Laplacian(image, cv2.CV_64F).var()
+
+    return score < threshold, score
 
 
 

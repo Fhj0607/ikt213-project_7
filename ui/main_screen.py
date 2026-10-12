@@ -7,7 +7,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 
-from ocr.paddle_ocr import extract_text
+from ocr.paddle_ocr import ExtractText
 
 
 BASE_DIR = os.path.dirname(
@@ -113,16 +113,13 @@ class SnapPrintApp(App):
 
     def select_image(self, filename):
 
-        image_path = os.path.join(
-            IMAGE_FOLDER,
-            filename
-        )
+        image_path = os.path.join(IMAGE_FOLDER, filename)
 
         self.image_display.source = image_path
         self.image_display.reload()
 
         self.ocr_text.text = "Processing..."
 
-        text = extract_text(image_path)
+        text = ExtractText(image_path)
 
         self.ocr_text.text = text
