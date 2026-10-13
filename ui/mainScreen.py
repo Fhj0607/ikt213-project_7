@@ -1,81 +1,49 @@
-import os
+import cv2
+import threading
 
-from kivy.app import App
+from kivy.clock import Clock
+from kivy.graphics.texture import Texture
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 
-from ocr.paddle_ocr import ExtractText
+from capture.camera import Camera
+from worker.imageWorker import Process
 
 
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
 
-IMAGE_FOLDER = os.path.join(BASE_DIR, "images")
+class MainScreen(BoxLayout):
 
+    LIVE = "LIVE"
+    FROZEN = "FROZEN"
 
-class SnapPrintApp(App):
+    def __init__(self, **kwargs):
 
-    def build(self):
-        main_layout = BoxLayout(
-            orientation="horizontal"
-        )
+        super().__init__(orientation="vertical", **kwargs)
 
-        menu = BoxLayout(
-            orientation="vertical",
-            size_hint_x=0.25,
-            size_hint_y=None
-        )
+        self.camera = Camera()
+        self.camera.Start()
 
-        menu.bind(
-            minimum_height=menu.setter("height")
-        )
+        self.state = self.LIVE
 
-        for filename in os.listdir(IMAGE_FOLDER):
+        self.imageDisplay = Image(size_hint_y=0.65)
 
-            if filename.lower().endswith(
-                (".jpg", ".png", ".jpeg")
-            ):
-                button = Button(
-                    text=filename,
-                    size_hint_y=None,
-                    height=50
-                )
+        self.captureButton = Button(text="Capture", size_hint_y=0.1)
 
-                button.bind(
-                    on_press=lambda instance, name=filename:
-                    self.select_image(name)
-                )
+        self.captureButton.bind(on_press=self.OnCapturePressed)
 
-                menu.add_widget(button)
+        textScroll = ScrollView(size_hint_y=0.25)
 
-        scroll = ScrollView()
-        scroll.add_widget(menu)
-
-        right_layout = BoxLayout(
-            orientation="vertical"
-        )
-
-        self.image_display = Image(
-            size_hint_y=0.6
-        )
-
-        text_scroll = ScrollView(
-            size_hint_y=0.4
-        )
-
-        self.ocr_text = Label(
-            text="Select an image",
+        self.ocrText = Label(
+            text="Point the camera at some text",
             size_hint_y=None,
-            text_size=(None, None),
             halign="left",
             valign="top"
         )
 
-        self.ocr_text.bind(
+        self.ocrText.bind(
             width=lambda instance, width:
             setattr(
                 instance,
@@ -84,7 +52,7 @@ class SnapPrintApp(App):
             )
         )
 
-        self.ocr_text.bind(
+        self.ocrText.bind(
             texture_size=lambda instance, size:
             setattr(
                 instance,
@@ -93,33 +61,145 @@ class SnapPrintApp(App):
             )
         )
 
-        text_scroll.add_widget(
-            self.ocr_text
+        textScroll.add_widget(self.ocrText)
+
+        self.add_widget(self.imageDisplay)
+
+        self.add_widget(self.captureButton)
+
+        self.add_widget(textScroll)
+
+        Clock.schedule_interval(self.UpdatePreview, 1 / 30)
+
+
+
+    def UpdatePreview(self, dt):
+
+        frame = self.camera.GetLatestFrame()
+
+        if frame is None:
+            return
+
+        if self.state == self.LIVE:
+            self.DisplayFrame(frame)
+
+
+
+    def DisplayFrame(self, frame):
+
+        displayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        displayFrame = cv2.flip(displayFrame, 0)
+
+        height, width, channels = displayFrame.shape
+
+        texture = Texture.create(size=(width, height), colorfmt="rgb")
+
+        texture.blit_buffer(
+            displayFrame.tobytes(),
+            colorfmt="rgb",
+            bufferfmt="ubyte"
         )
 
-        right_layout.add_widget(
-            self.image_display
+        self.imageDisplay.texture = texture
+
+
+
+    def OnCapturePressed(self, instance):
+
+        if self.state == self.FROZEN:
+
+            self.state = self.LIVE
+
+            self.captureButton.text = "Capture"
+
+            self.ocrText.text = ("Point the camera at some text")
+
+            return
+
+        if self.state != self.LIVE:
+            return
+
+        frame = self.camera.GetLatestFrame()
+
+        if frame is None:
+            self.ocrText.text = "No camera frame available yet"
+            return
+
+        self.state = self.FROZEN
+
+        self.captureButton.disabled = True
+
+        self.DisplayFrame(frame)
+        self.ocrText.text = "Processing..."
+
+        self.StartProcessing(frame)
+
+
+
+    def StartProcessing(self, frame):
+
+        processingThread = threading.Thread(
+            target=self.ProcessInBackground,
+            args=(frame,),
+            daemon=True
         )
 
-        right_layout.add_widget(
-            text_scroll
-        )
-
-        main_layout.add_widget(scroll)
-        main_layout.add_widget(right_layout)
-
-        return main_layout
+        processingThread.start()
 
 
-    def select_image(self, filename):
 
-        image_path = os.path.join(IMAGE_FOLDER, filename)
+    def ProcessInBackground(self, frame):
 
-        self.image_display.source = image_path
-        self.image_display.reload()
+        try:
 
-        self.ocr_text.text = "Processing..."
+            processedImage, report, text = Process(frame)
 
-        text = ExtractText(image_path)
+            Clock.schedule_once(
+                lambda dt:
+                self.OnProcessingFinished(
+                    report,
+                    text
+                )
+            )
 
-        self.ocr_text.text = text
+        except Exception as error:
+            errorMessage = str(error)
+
+            Clock.schedule_once(
+                lambda dt:
+                self.OnProcessingFailed(
+                    errorMessage
+                )
+            )
+
+
+
+    def OnProcessingFinished(self, report, text):
+
+        reportText = "\n".join(report)
+
+        if reportText:
+
+            self.ocrText.text = (reportText + "\n\nOCR RESULT:\n\n" + text)
+
+        else:
+
+            self.ocrText.text = ("OCR RESULT:\n\n" + text)
+
+        self.captureButton.disabled = False
+        self.captureButton.text = "Scan Again"
+
+
+
+    def OnProcessingFailed(self, error):
+
+        self.ocrText.text = ("Processing failed:\n" + error)
+
+        self.captureButton.disabled = False
+        self.captureButton.text = "Scan Again"
+
+
+
+    def StopCamera(self):
+        self.camera.Stop()

@@ -1,70 +1,83 @@
 import cv2
-
-from processing.preprocessing import (
-    ToGrayscale,
-    ResizeImage
-)
-
-from processing.analysis import IsBlurry
+import threading
+import time
 
 
-def LiveCapture(cameraIndex=0, threshold=100.0):
 
-    camera = cv2.VideoCapture(cameraIndex)
+class Camera:
 
-    if not camera.isOpened():
-        raise RuntimeError(
-            "Could not open camera"
-        )
+    def __init__(
+        self,
+        cameraIndex=0,
+        width=640,
+        height=480
+    ):
+        self.cameraIndex = cameraIndex
+        self.width = width
+        self.height = height
 
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+        self.latestFrame = None
 
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        self.frameLock = threading.Lock()
 
-    try:
-        while True:
+        self.running = False
+        self.captureThread = None
+
+
+
+    def Start(self):
+
+        self.running = True
+
+        self.captureThread = threading.Thread(target=self.CaptureLoop, daemon=True)
+
+        self.captureThread.start()
+
+
+
+    def CaptureLoop(self):
+
+        camera = cv2.VideoCapture(self.cameraIndex)
+
+        if not camera.isOpened():
+            self.running = False
+            return
+
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+
+        while self.running:
 
             success, frame = camera.read()
 
             if not success:
-                print("Could not read camera frame")
-                break
+                time.sleep(0.01)
+                continue
 
-            smallFrame = ResizeImage(frame,320,240)
+            with self.frameLock:
+                self.latestFrame = frame.copy()
 
-            grayFrame = ToGrayscale(smallFrame)
-
-            blurry, score = IsBlurry(grayFrame, threshold)
-
-            if blurry:
-                status = "BLURRY"
-                color = (0, 0, 255)
-
-            else:
-                status = "SHARP"
-                color = (0, 255, 0)
-
-            cv2.putText(
-                frame,
-                f"{status} | Score: {score:.1f}",
-                (20, 35),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                color,
-                2
-            )
-
-            cv2.imshow(
-                "SnapPrint Camera",
-                frame
-            )
-
-            key = cv2.waitKey(1) & 0xFF
-
-            if key == ord("q"):
-                break
-
-    finally:
         camera.release()
 
-        cv2.destroyAllWindows()
+
+
+    def GetLatestFrame(self):
+
+        with self.frameLock:
+
+            if self.latestFrame is None:
+                return None
+
+            return self.latestFrame.copy()
+
+
+
+    def Stop(self):
+
+        self.running = False
+
+        if self.captureThread is not None:
+            self.captureThread.join(timeout=1)
+
+            self.captureThread = None
