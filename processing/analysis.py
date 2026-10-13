@@ -29,20 +29,3 @@ def IsTooBright(image, threshold=200.0):
     score = image.mean()
 
     return score > threshold, score
-
-
-
-def IsAcceptable(image):
-
-    gray = ToGrayscale(image)
-
-    blurry, blurScore = IsBlurry(gray)
-    tooDark, brightnessScore = IsTooDark(gray)
-
-    if blurry:
-        return False
-
-    if tooDark:
-        return False
-
-    return True
