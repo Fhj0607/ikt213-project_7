@@ -79,19 +79,18 @@ class SnapPrintController:
 
             self.sendFrameToUi(frame)
 
-            current_time = time.monotonic()
+            if self.state == self.WAITING_FOR_CHANGE:
+                self.handleWaitingForChange(frame)
 
-            if current_time - self.last_quality_check < QUALITY_CHECK_INTERVAL:
                 time.sleep(0.05)
                 continue
 
-            self.last_quality_check = current_time
+            current_time = time.monotonic()
 
-            if self.state == self.SCANNING:
+            if current_time - self.last_quality_check >= QUALITY_CHECK_INTERVAL:
+                self.last_quality_check = current_time
+
                 self.handleScanning(frame)
-
-            elif self.state == self.WAITING_FOR_CHANGE:
-                self.handleWaitingForChange(frame)
 
             time.sleep(0.05)
 
