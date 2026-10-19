@@ -1,14 +1,12 @@
+from ocr.paddle_ocr import OCR
+
 class Pipeline:
 
     def __init__(self):
-        self.ocr = None
+        self.ocr = OCR()
 
     def process(self, frame):
 
-        from ocr.paddle_ocr import extractText
+        image = frame.copy()
 
-        processed = frame.copy()
-
-        text = extractText(processed)
-
-        return text
+        return self.ocr.extract(image)
