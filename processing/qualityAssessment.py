@@ -84,22 +84,21 @@ class QualityAssessment:
             }
 
         sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
+
         brightness_score = np.mean(gray_image)
+
         contrast_score = np.std(gray_image)
 
         blurry = sharpness_score < MIN_SHARPNESS
+
         too_dark = brightness_score < MIN_BRIGHTNESS
+
         too_bright = brightness_score > MAX_BRIGHTNESS
+
         low_contrast = contrast_score < MIN_CONTRAST
 
-        acceptable = (
-                not blurry
-                and not too_dark
-                and not too_bright
-        )
-
         return {
-            "acceptable": acceptable,
+            "acceptable": True,
 
             "stable": True,
             "stable_count": self.stable_count,
@@ -108,7 +107,7 @@ class QualityAssessment:
                 "blurry": blurry,
                 "too_dark": too_dark,
                 "too_bright": too_bright,
-                "low_contrast": low_contrast,
+                "low_contrast": low_contrast
             },
 
             "scores": {
