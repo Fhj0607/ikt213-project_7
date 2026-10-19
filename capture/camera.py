@@ -1,83 +1,37 @@
 import cv2
-import threading
-import time
 
 
 
 class Camera:
 
-    def __init__(
-        self,
-        cameraIndex=0,
-        width=640,
-        height=480
-    ):
-        self.cameraIndex = cameraIndex
-        self.width = width
-        self.height = height
-
-        self.latestFrame = None
-
-        self.frameLock = threading.Lock()
-
-        self.running = False
-        self.captureThread = None
+    def __init__(self, camera_index=0):
+        self.camera_index = camera_index
+        self.camera = None
 
 
 
-    def Start(self):
+    def start(self):
+        self.camera = cv2.VideoCapture(self.camera_index)
 
-        self.running = True
-
-        self.captureThread = threading.Thread(target=self.CaptureLoop, daemon=True)
-
-        self.captureThread.start()
+        if not self.camera.isOpened():
+            raise RuntimeError("Could not start camera")
 
 
 
-    def CaptureLoop(self):
+    def captureFrame(self):
+        if self.camera is None:
+            raise RuntimeError("Camera is not started")
 
-        camera = cv2.VideoCapture(self.cameraIndex)
+        success, frame = self.camera.read()
 
-        if not camera.isOpened():
-            self.running = False
-            return
+        if not success:
+            raise RuntimeError("Could not capture frame")
 
-        camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-
-        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-
-        while self.running:
-
-            success, frame = camera.read()
-
-            if not success:
-                time.sleep(0.01)
-                continue
-
-            with self.frameLock:
-                self.latestFrame = frame.copy()
-
-        camera.release()
+        return frame
 
 
 
-    def GetLatestFrame(self):
-
-        with self.frameLock:
-
-            if self.latestFrame is None:
-                return None
-
-            return self.latestFrame.copy()
-
-
-
-    def Stop(self):
-
-        self.running = False
-
-        if self.captureThread is not None:
-            self.captureThread.join(timeout=1)
-
-            self.captureThread = None
+    def stop(self):
+        if self.camera is not None:
+            self.camera.release()
+            self.camera = None

@@ -1,5 +1,6 @@
 from kivy.app import App
 
+from controller.snapPrintController import SnapPrintController
 from ui.mainScreen import MainScreen
 
 
@@ -7,16 +8,16 @@ from ui.mainScreen import MainScreen
 class SnapPrintApp(App):
 
     def build(self):
-        self.mainScreen = MainScreen()
+        self.main_screen = MainScreen()
 
-        return self.mainScreen
+        self.controller = SnapPrintController(
+            self.main_screen
+        )
 
+        return self.main_screen
 
+    def on_start(self):
+        self.controller.start()
 
     def on_stop(self):
-        self.mainScreen.StopCamera()
-
-
-
-if __name__ == "__main__":
-    SnapPrintApp().run()
+        self.controller.stop()

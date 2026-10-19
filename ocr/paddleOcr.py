@@ -13,7 +13,7 @@ ocr = PaddleOCR(
 
 
 
-def PrepareForOCR(image):
+def prepareForOcr(image):
     if len(image.shape) == 2:
         return cv2.cvtColor(
             image,
@@ -24,8 +24,8 @@ def PrepareForOCR(image):
 
 
 
-def ExtractText(image):
-    image = PrepareForOCR(image)
+def extractText(image):
+    image = prepareForOcr(image)
 
     results = ocr.predict(image)
 

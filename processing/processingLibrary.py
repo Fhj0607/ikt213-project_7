@@ -3,17 +3,17 @@ import numpy as np
 
 
 
-def ToGrayscale(image):
+def toGrayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
 
-def ResizeImage(image, width, height):
+def resizeImage(image, width, height):
     return cv2.resize(image,(width, height))
 
 
 
-def Sharpen(image):
+def sharpen(image):
     kernel = np.array([
         [0, -1, 0],
         [-1, 5, -1],
@@ -24,14 +24,14 @@ def Sharpen(image):
 
 
 
-def ApplyClahe(image):
+def applyClahe(image):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
     return clahe.apply(image)
 
 
 
-def Brighten(image, amount=30):
+def brighten(image, amount=30):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     h, s, v = cv2.split(hsv)
@@ -44,7 +44,7 @@ def Brighten(image, amount=30):
 
 
 
-def Darken(image, amount=30):
+def darken(image, amount=30):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     h, s, v = cv2.split(hsv)
