@@ -31,13 +31,20 @@ class QualityAssessment:
 
     def checkStability(self, gray_image):
 
-        current_frame = resizeImage(gray_image, 320, 240)
+        current_frame = resizeImage(
+            gray_image,
+            320,
+            240
+        )
 
         if self.previous_frame is None:
             self.previous_frame = current_frame
-            return False
+            return False, 0.0
 
-        difference = cv2.absdiff(current_frame, self.previous_frame)
+        difference = cv2.absdiff(
+            current_frame,
+            self.previous_frame
+        )
 
         mean_difference = np.mean(difference)
 
@@ -48,7 +55,12 @@ class QualityAssessment:
         else:
             self.stable_count = 0
 
-        return self.stable_count >= REQUIRED_STABLE_FRAMES
+        stable = (
+                self.stable_count
+                >= REQUIRED_STABLE_FRAMES
+        )
+
+        return stable, float(mean_difference)
 
 
 
@@ -56,14 +68,19 @@ class QualityAssessment:
 
         gray_image = toGrayscale(frame)
 
-        stable = self.checkStability(gray_image)
+        stable, difference_score = self.checkStability(gray_image)
 
         if not stable:
             return {
                 "acceptable": False,
                 "stable": False,
                 "stable_count": self.stable_count,
-                "reason": "Image is not stable"
+
+                "issues": {},
+
+                "scores": {
+                    "difference_score": difference_score
+                }
             }
 
         sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
@@ -97,6 +114,7 @@ class QualityAssessment:
             "scores": {
                 "sharpness_score": float(sharpness_score),
                 "brightness_score": float(brightness_score),
-                "contrast_score": float(contrast_score)
+                "contrast_score": float(contrast_score),
+                "difference_score": difference_score
             }
         }
