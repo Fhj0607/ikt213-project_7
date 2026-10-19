@@ -21,3 +21,8 @@ class SnapPrintApp(App):
 
     def on_stop(self):
         self.controller.stop()
+
+
+
+if __name__ == "__main__":
+    SnapPrintApp().run()

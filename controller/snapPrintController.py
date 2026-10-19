@@ -1,4 +1,5 @@
 import threading
+import time
 
 from kivy.clock import Clock
 
@@ -69,6 +70,8 @@ class SnapPrintController:
             elif self.state == self.WAITING_FOR_CHANGE:
                 self.handleWaitingForChange(assessment)
 
+            time.sleep(0.05)
+
 
 
     def handleScanning(self, frame, assessment):
@@ -119,8 +122,7 @@ class SnapPrintController:
 
             Clock.schedule_once(
                 lambda dt, output=text:
-                self.main_screen
-                .displayOcrOutput(output)
+                self.main_screen.displayOcrOutput(output)
             )
 
         except Exception as error:
@@ -129,8 +131,7 @@ class SnapPrintController:
 
             Clock.schedule_once(
                 lambda dt, message=error_message:
-                self.main_screen
-                .displayOcrOutput(
+                self.main_screen.displayOcrOutput(
                     "Processing failed:\n"
                     + message
                 )
