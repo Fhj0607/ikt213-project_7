@@ -1,15 +1,24 @@
+import cv2
+import numpy as np
 import threading
 import time
+
+from concurrent.futures import ThreadPoolExecutor
 
 from kivy.clock import Clock
 
 from capture.camera import Camera
 from ocr.paddleOcr import extractText
 from processing.processingPipeline import processImage
-from processing.qualityAssessment import (
-    QualityAssessment,
-    STABILITY_THRESHOLD
-)
+from processing.qualityAssessment import QualityAssessment
+from processing.processingLibrary import (toGrayscale, resizeImage)
+
+
+
+QUALITY_CHECK_INTERVAL = 0.5
+
+SCENE_CHANGE_THRESHOLD = 15.0
+REQUIRED_CHANGED_FRAMES = 3
 
 
 
@@ -24,10 +33,17 @@ class SnapPrintController:
         self.camera = Camera()
         self.quality_assessment = QualityAssessment()
 
+        self.processing_worker = ThreadPoolExecutor(
+            max_workers=1
+        )
+
         self.running = False
         self.state = self.SCANNING
 
+        self.captured_frame = None
         self.change_count = 0
+
+        self.last_quality_check = 0.0
 
 
 
@@ -39,18 +55,19 @@ class SnapPrintController:
         self.camera.start()
         self.running = True
 
-        capture_thread = threading.Thread(
-            target=self.captureLoop,
-            daemon=True
-        )
+        capture_thread = threading.Thread(target=self.captureLoop, daemon=True)
 
         capture_thread.start()
 
 
 
     def stop(self):
+
         self.running = False
+
         self.camera.stop()
+
+        self.processing_worker.shutdown(wait=False, cancel_futures=True)
 
 
 
@@ -62,53 +79,80 @@ class SnapPrintController:
 
             self.sendFrameToUi(frame)
 
-            assessment = self.quality_assessment.assessFrame(frame)
+            current_time = time.monotonic()
+
+            if current_time - self.last_quality_check < QUALITY_CHECK_INTERVAL:
+                time.sleep(0.05)
+                continue
+
+            self.last_quality_check = current_time
 
             if self.state == self.SCANNING:
-                self.handleScanning(frame, assessment)
+                self.handleScanning(frame)
 
             elif self.state == self.WAITING_FOR_CHANGE:
-                self.handleWaitingForChange(assessment)
+                self.handleWaitingForChange(frame)
 
             time.sleep(0.05)
 
 
 
-    def handleScanning(self, frame, assessment):
+    def handleScanning(self, frame):
+
+        assessment = self.quality_assessment.assessFrame(frame)
 
         if not assessment["acceptable"]:
             return
+
+        self.captured_frame = frame.copy()
 
         self.state = self.WAITING_FOR_CHANGE
 
         issues = assessment["issues"]
 
-        processing_thread = threading.Thread(
-            target=self.processFrame,
-            args=(frame.copy(), issues),
-            daemon=True
+        self.processing_worker.submit(
+            self.processFrame,
+            self.captured_frame.copy(),
+            issues
         )
 
-        processing_thread.start()
 
 
+    def handleWaitingForChange(self, frame):
 
-    def handleWaitingForChange(self, assessment):
+        difference_score = self.sceneDifference(frame, self.captured_frame)
 
-        difference_score = assessment["scores"]["difference_score"]
-
-        if difference_score >= STABILITY_THRESHOLD:
+        if difference_score >= SCENE_CHANGE_THRESHOLD:
             self.change_count += 1
+
         else:
             self.change_count = 0
 
-        if self.change_count < 3:
+        if self.change_count < REQUIRED_CHANGED_FRAMES:
             return
 
         self.quality_assessment.reset()
 
         self.change_count = 0
+        self.captured_frame = None
+
         self.state = self.SCANNING
+
+
+
+    def sceneDifference(self, frame, captured_frame):
+
+        gray_frame = toGrayscale(frame)
+
+        gray_captured = toGrayscale(captured_frame)
+
+        gray_frame = resizeImage(gray_frame, 320, 240)
+
+        gray_captured = resizeImage(gray_captured, 320, 240)
+
+        difference = cv2.absdiff(gray_frame, gray_captured)
+
+        return float(np.mean(difference))
 
 
 
@@ -122,7 +166,8 @@ class SnapPrintController:
 
             Clock.schedule_once(
                 lambda dt, output=text:
-                self.main_screen.displayOcrOutput(output)
+                self.main_screen
+                .displayOcrOutput(output)
             )
 
         except Exception as error:
@@ -131,7 +176,8 @@ class SnapPrintController:
 
             Clock.schedule_once(
                 lambda dt, message=error_message:
-                self.main_screen.displayOcrOutput(
+                self.main_screen
+                .displayOcrOutput(
                     "Processing failed:\n"
                     + message
                 )
