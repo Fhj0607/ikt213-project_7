@@ -15,7 +15,8 @@ class Camera:
         if not self.cap.isOpened():
             self.stop()
             raise RuntimeError('Could not start camera.')
-    def read_frame(self):
+
+    def readFrame(self):
         if self.cap is None or not self.cap.isOpened():
             raise RuntimeError('Camera is not initialized.')
 

@@ -6,6 +6,7 @@ from kivy.graphics.texture import Texture
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from concurrent.futures import ThreadPoolExecutor
 
 from capture.camera import Camera
@@ -42,23 +43,35 @@ class MainScreen(BoxLayout):
 
         self.add_widget(self.quality_label)
 
-    def start_camera(self):
+        self.continue_button = Button(
+            text="Run OCR", size_hint_y=None, height=48, disabled=True
+        )
+        self.continue_button.bind(on_release=self.runOCR)
+        self.add_widget(self.continue_button)
+
+    def startCamera(self):
         self.camera.start()
 
         self.camera_event = Clock.schedule_interval(
-            self.update_frame, 1 / 30
+            self.updateFrame, 1 / 30
         )
 
         self.quality_event = Clock.schedule_interval(
-            self.check_quality, 0.5
+            self.checkQuality, 0.5
         )
 
-    def update_frame(self, dt):
-        frame = self.camera.read_frame()
+    def updateFrame(self, dt):
+        frame = self.camera.readFrame()
 
         # store original frame
         self.current_frame = frame
 
+        if self.state == "PAUSED":
+            return
+
+        self.showFrame(frame)
+
+    def showFrame(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         texture = Texture.create(
@@ -76,7 +89,7 @@ class MainScreen(BoxLayout):
 
         self.preview.texture = texture
 
-    def scene_difference(self, frame1, frame2):
+    def sceneDifference(self, frame1, frame2):
 
         gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
@@ -88,7 +101,7 @@ class MainScreen(BoxLayout):
 
         return float(np.mean(difference))
 
-    def check_quality(self, dt):
+    def checkQuality(self, dt):
 
         if self.current_frame is None:
             return
@@ -96,13 +109,13 @@ class MainScreen(BoxLayout):
         frame = self.current_frame.copy()
 
         # OCR is already running
-        if self.state == "PROCESSING":
+        if self.state in ("PAUSED", "PROCESSING"):
             return
 
         # wait until the scene changes
         if self.state == "WAITING":
 
-            difference = self.scene_difference(
+            difference = self.sceneDifference(
                 frame,
                 self.captured_frame
             )
@@ -137,6 +150,16 @@ class MainScreen(BoxLayout):
 
         # suitable frame captured
         self.captured_frame = frame.copy()
+        self.state = "PAUSED"
+        self.showFrame(self.captured_frame)
+        self.quality_label.text = "Stable frame captured. Paused for inspection."
+        self.continue_button.disabled = False
+
+    def runOCR(self, *_):
+        if self.shutting_down or self.state != "PAUSED":
+            return
+
+        self.continue_button.disabled = True
         self.state = "PROCESSING"
 
         self.quality_label.text = "Processing image..."
@@ -148,9 +171,9 @@ class MainScreen(BoxLayout):
             self.captured_frame
         )
 
-        future.add_done_callback(self.processing_finished)
+        future.add_done_callback(self.processingFinished)
 
-    def processing_finished(self, future):
+    def processingFinished(self, future):
 
         try:
             text = future.result()
@@ -164,10 +187,10 @@ class MainScreen(BoxLayout):
             return
 
         Clock.schedule_once(
-            lambda dt: self.display_result(text,error)
+            lambda dt: self.displayResult(text,error)
         )
 
-    def display_result(self, text, error=None):
+    def displayResult(self, text, error=None):
 
         if self.shutting_down:
             return
@@ -188,7 +211,7 @@ class MainScreen(BoxLayout):
         self.scene_change_count = 0
         self.state = "WAITING"
 
-    def stop_camera(self):
+    def stopCamera(self):
 
         self.shutting_down = True
 

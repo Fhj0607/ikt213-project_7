@@ -5,10 +5,10 @@ class Pipeline:
 
     def process(self, frame):
 
-        from ocr.paddle_ocr import ExtractText
+        from ocr.paddle_ocr import extractText
 
         processed = frame.copy()
 
-        text = ExtractText(processed)
+        text = extractText(processed)
 
         return text

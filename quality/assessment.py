@@ -20,7 +20,7 @@ class QualityAssessment:
         self.previous_frame = None
         self.stable_count = 0
 
-    def check_stability(self, gray):
+    def checkStability(self, gray):
 
         # resize for faster comparison
         current = cv2.resize(gray, (320, 240))
@@ -77,7 +77,7 @@ class QualityAssessment:
 
         # check stability only if other quality checks pass
         if passed:
-            stable = self.check_stability(gray)
+            stable = self.checkStability(gray)
 
             if not stable:
                 passed = False
