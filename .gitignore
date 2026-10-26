@@ -13,6 +13,8 @@ results/*.jpeg
 
 # Environment / secrets
 .env
+.venv-vl/
+.models/
 
 # Local development / test data
 experiments/

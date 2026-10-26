@@ -1,12 +1,13 @@
 # SnapPrint
 
-SnapPrint is a Python desktop application for image processing and optical character recognition (OCR).
+SnapPrint is a local Python desktop application for printed and handwritten text recognition using PaddleOCR-VL, with spoken camera guidance and document playback.
 
 ## Requirements
 
 - Windows
 - Miniconda or Anaconda
 - Python 3.11
+- NVIDIA GPU and a CUDA 12.8-compatible driver for the camera app (tested on an RTX 4050 Laptop GPU, 6 GB)
 
 ## Installation
 
@@ -50,10 +51,11 @@ conda activate snapprint
 Install the required packages:
 
 ```bash
-pip install numpy opencv-python kivy paddlepaddle paddleocr
+python -m pip install --no-compile -r requirements-gpu.txt
+python -m pip install --no-compile -r requirements.txt
 ```
 
-The installation may take a few minutes.
+The GPU packages are several gigabytes. First recognition also downloads model weights; subsequent recognition runs locally using cached models.
 
 ## Running SnapPrint
 
@@ -77,3 +79,16 @@ After the initial installation, you only need to open a Conda prompt, navigate t
 conda activate snapprint
 python main.py
 ```
+
+## Controls
+
+- **Read text / R:** read the recognized document aloud.
+- **Space:** stop speech.
+- **Scan again / C:** explicitly start the next scan. Scanning stays paused after capture so camera movement cannot interrupt the result.
+- **2:** toggle single-page/two-page mode. For two pages, align their divide with the image center; pages are read left then right.
+
+Keep PyCharm's interpreter set to the `snapprint` Conda environment. Model loading can take over a minute on first use; later scans reuse the loaded model.
+
+Run checks with `python -m unittest discover -s tests -v`. Run the simulated-camera UI check with `python tests/ui_smoke.py`.
+
+See [PaddleOCR-VL setup and validation](PADDLEOCR_VL.md) for saved-image testing, memory settings, and limitations.

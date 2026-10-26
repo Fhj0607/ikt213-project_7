@@ -1,0 +1,5 @@
+paddleocr[doc-parser]==3.7.0
+paddlex==3.7.2
+transformers==5.20.2
+kivy==2.3.1
+pywin32==312

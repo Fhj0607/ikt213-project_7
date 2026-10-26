@@ -5,8 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-
-
+from kivy.uix.button import Button
 
 class MainScreen(BoxLayout):
 
@@ -47,8 +46,10 @@ class MainScreen(BoxLayout):
         self.add_widget(self.image_display)
 
         self.add_widget(text_scroll)
-
-
+        self.read_button = Button(text='Read text (R)', size_hint_y=None, height=48)
+        self.add_widget(self.read_button)
+        self.scan_again_button = Button(text='Scan again (C)', size_hint_y=None, height=48)
+        self.add_widget(self.scan_again_button)
 
     def displayFrame(self, frame):
 
@@ -67,8 +68,6 @@ class MainScreen(BoxLayout):
         )
 
         self.image_display.texture = texture
-
-
 
     def displayOcrOutput(self, text):
         self.ocr_text.text = text

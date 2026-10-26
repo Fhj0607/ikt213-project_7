@@ -3,8 +3,6 @@ import numpy as np
 
 from processing.processingLibrary import (toGrayscale, resizeImage)
 
-
-
 MIN_SHARPNESS = 50.0
 MIN_BRIGHTNESS = 50.0
 MAX_BRIGHTNESS = 210.0
@@ -12,8 +10,6 @@ MIN_CONTRAST = 25.0
 
 STABILITY_THRESHOLD = 6.0
 REQUIRED_STABLE_FRAMES = 3
-
-
 
 class QualityAssessment:
 
@@ -64,19 +60,6 @@ class QualityAssessment:
 
         stable, difference_score = self.checkStability(gray_image)
 
-        if not stable:
-            return {
-                "acceptable": False,
-                "stable": False,
-                "stable_count": self.stable_count,
-
-                "issues": {},
-
-                "scores": {
-                    "difference_score": difference_score
-                }
-            }
-
         sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
 
         brightness_score = np.mean(gray_image)
@@ -92,9 +75,9 @@ class QualityAssessment:
         low_contrast = contrast_score < MIN_CONTRAST
 
         return {
-            "acceptable": True,
+            "acceptable": stable,
 
-            "stable": True,
+            "stable": stable,
             "stable_count": self.stable_count,
 
             "issues": {

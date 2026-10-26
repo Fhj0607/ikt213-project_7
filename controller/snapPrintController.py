@@ -1,5 +1,3 @@
-import cv2
-import numpy as np
 import threading
 import time
 
@@ -8,30 +6,33 @@ from concurrent.futures import ThreadPoolExecutor
 from kivy.clock import Clock
 
 from capture.camera import Camera
-from ocr.paddleOcr import extractText
-from processing.processingPipeline import processImage
+from ocr.vl_reader import VLReader
+from output.speech import Speech
 from processing.qualityAssessment import QualityAssessment
-from processing.processingLibrary import (toGrayscale, resizeImage)
 
 
 
 QUALITY_CHECK_INTERVAL = 0.5
 
-SCENE_CHANGE_THRESHOLD = 15.0
-REQUIRED_CHANGED_FRAMES = 3
 
 
 
 class SnapPrintController:
 
     SCANNING = "SCANNING"
-    WAITING_FOR_CHANGE = "WAITING_FOR_CHANGE"
+    PAUSED = "PAUSED"
 
     def __init__(self, main_screen):
         self.main_screen = main_screen
 
         self.camera = Camera()
         self.quality_assessment = QualityAssessment()
+        self.speech = Speech()
+        self.reader = VLReader()
+        self.processing = threading.Event()
+        self.two_pages = False
+        self.rescan_requested = threading.Event()
+        self.processing_future = None
 
         self.processing_worker = ThreadPoolExecutor(
             max_workers=1
@@ -41,7 +42,6 @@ class SnapPrintController:
         self.state = self.SCANNING
 
         self.captured_frame = None
-        self.change_count = 0
 
         self.last_quality_check = 0.0
 
@@ -58,6 +58,7 @@ class SnapPrintController:
         capture_thread = threading.Thread(target=self.captureLoop, daemon=True)
 
         capture_thread.start()
+        self.speech.speak('Ready. Hold the page steady. Press R to read the result, and space to stop speech.')
 
 
 
@@ -68,6 +69,11 @@ class SnapPrintController:
         self.camera.stop()
 
         self.processing_worker.shutdown(wait=False, cancel_futures=True)
+        if self.processing_future is not None:
+            self.processing_future.add_done_callback(lambda future: self.reader.close())
+        else:
+            self.reader.close()
+        self.speech.close()
 
 
 
@@ -79,9 +85,16 @@ class SnapPrintController:
 
             self.sendFrameToUi(frame)
 
-            if self.state == self.WAITING_FOR_CHANGE:
-                self.handleWaitingForChange(frame)
+            if self.processing.is_set():
+                time.sleep(0.05)
+                continue
 
+            if self.rescan_requested.is_set():
+                self.rescan_requested.clear()
+                self.quality_assessment.reset()
+                self.state = self.SCANNING
+
+            if self.state == self.PAUSED:
                 time.sleep(0.05)
                 continue
 
@@ -99,17 +112,23 @@ class SnapPrintController:
     def handleScanning(self, frame):
 
         assessment = self.quality_assessment.assessFrame(frame)
+        self.speech.announceQuality(assessment)
 
         if not assessment["acceptable"]:
             return
 
         self.captured_frame = frame.copy()
 
-        self.state = self.WAITING_FOR_CHANGE
+        self.state = self.PAUSED
 
         issues = assessment["issues"]
+        self.processing.set()
+        self.speech.rememberResult('')
+        self.speech.speak('Page captured. Reading document.', interrupt=True)
+        Clock.schedule_once(lambda dt: self.main_screen.displayOcrOutput('Reading document...'))
+        Clock.schedule_once(lambda dt: setattr(self.main_screen.scan_again_button, 'disabled', True))
 
-        self.processing_worker.submit(
+        self.processing_future = self.processing_worker.submit(
             self.processFrame,
             self.captured_frame.copy(),
             issues
@@ -117,54 +136,26 @@ class SnapPrintController:
 
 
 
-    def handleWaitingForChange(self, frame):
-
-        difference_score = self.sceneDifference(frame, self.captured_frame)
-
-        if difference_score >= SCENE_CHANGE_THRESHOLD:
-            self.change_count += 1
-
-        else:
-            self.change_count = 0
-
-        if self.change_count < REQUIRED_CHANGED_FRAMES:
-            return
-
-        self.quality_assessment.reset()
-
-        self.change_count = 0
-        self.captured_frame = None
-
-        self.state = self.SCANNING
-
-
-
-    def sceneDifference(self, frame, captured_frame):
-
-        gray_frame = toGrayscale(frame)
-
-        gray_captured = toGrayscale(captured_frame)
-
-        gray_frame = resizeImage(gray_frame, 320, 240)
-
-        gray_captured = resizeImage(gray_captured, 320, 240)
-
-        difference = cv2.absdiff(gray_frame, gray_captured)
-
-        return float(np.mean(difference))
-
-
-
     def processFrame(self, frame, issues):
 
         try:
 
-            processed_image, report = processImage(frame, issues)
-
-            text = extractText(processed_image)
+            # Preserve color and fine handwriting strokes for the VLM.
+            started = time.monotonic()
+            text, _ = self.reader.read(frame, self.two_pages)
+            elapsed = time.monotonic() - started
+            if not self.running:
+                return
+            text = text.strip()
+            self.speech.rememberResult(text)
+            self.speech.speak(
+                f'Text recognized in {elapsed:.0f} seconds. Press R to read it aloud.'
+                if text else 'No readable text found. Please scan again.',
+                interrupt=True,
+            )
 
             Clock.schedule_once(
-                lambda dt, output=text:
+                lambda dt, output=text or 'No readable text found. Press C to scan again.':
                 self.main_screen
                 .displayOcrOutput(output)
             )
@@ -172,6 +163,9 @@ class SnapPrintController:
         except Exception as error:
 
             error_message = str(error)
+            if not self.running:
+                return
+            self.speech.speak('Processing failed. Please scan again.', interrupt=True)
 
             Clock.schedule_once(
                 lambda dt, message=error_message:
@@ -181,6 +175,23 @@ class SnapPrintController:
                     + message
                 )
             )
+        finally:
+            self.processing.clear()
+            if self.running:
+                Clock.schedule_once(lambda dt: setattr(self.main_screen.scan_again_button, 'disabled', False))
+
+    def requestScan(self, *_):
+        if self.processing.is_set():
+            self.speech.speak('Still reading. Please wait.', interrupt=True)
+            return
+        self.rescan_requested.set()
+        self.speech.speak('Ready to scan again.', interrupt=True)
+
+    def readResult(self, *_):
+        if self.processing.is_set():
+            self.speech.speak('Still reading the document. Please wait.', interrupt=True)
+        else:
+            self.speech.repeat()
 
 
 
