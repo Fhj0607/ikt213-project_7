@@ -6,8 +6,6 @@ from processing.processingLibrary import (
     darken
 )
 
-
-
 def processImage(image, issues):
 
     processed_image = image.copy()

@@ -21,13 +21,9 @@ class QualityAssessment:
         self.previous_frame = None
         self.stable_count = 0
 
-
-
     def reset(self):
         self.previous_frame = None
         self.stable_count = 0
-
-
 
     def checkStability(self, gray_image):
 
@@ -61,8 +57,6 @@ class QualityAssessment:
         )
 
         return stable, float(mean_difference)
-
-
 
     def assessFrame(self, frame):
 
