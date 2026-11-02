@@ -119,7 +119,7 @@ class SnapPrintController:
             try:
                 frame = self.camera.captureFrame()
             except Exception as error:
-                self.scheduleUi(lambda message=str(error): self.main_screen.displayOcrOutput(message))
+                self.scheduleUi(lambda message=str(error): setattr(self.main_screen.status, "text", message))
                 return
             self.latest_frame = frame.copy()
 
@@ -241,7 +241,6 @@ class SnapPrintController:
         self.speech.rememberResult('')
         self.speech.speak('Page captured. Reading document.', interrupt=True)
         self.scheduleUi(lambda: setattr(self.main_screen.status, "text", "Page captured. Reading document..."))
-        self.scheduleUi(lambda: self.main_screen.displayOcrOutput("Reading document..."))
         self.scheduleUi(lambda: self.setBusy(True))
 
         self.processing_future = self.processing_worker.submit(
@@ -265,20 +264,13 @@ class SnapPrintController:
             if not self.running:
                 return
             text = text.strip()
-            if text:
-                self.pages.append(text)
-            self.speech.rememberResult("\n\n".join(self.pages))
             self.speech.speak(
                 f'Text recognized in {elapsed:.0f} seconds.'
                 if text else 'No readable text found. Please scan again.',
                 interrupt=True,
             )
 
-            self.scheduleUi(
-                lambda output="\n\n".join(self.pages) if text else 'No readable text found. Press C to scan again.':
-                self.main_screen
-                .displayOcrOutput(output)
-            )
+            self.scheduleUi(lambda: self.finishRecognition(text))
 
         except Exception as error:
 
@@ -287,18 +279,20 @@ class SnapPrintController:
                 return
             self.speech.speak('Processing failed. Please scan again.', interrupt=True)
 
-            self.scheduleUi(
-                lambda message=error_message:
-                self.main_screen
-                .displayOcrOutput(
-                    "Processing failed:\n"
-                    + message
-                )
-            )
+            self.scheduleUi(lambda message=error_message: setattr(
+                self.main_screen.status, "text", "Processing failed: " + message))
         finally:
             self.processing.clear()
             if self.running:
                 self.scheduleUi(lambda: self.setBusy(False))
+
+    def finishRecognition(self, text):
+        if text:
+            self.pages.append(text)
+            self.main_screen.appendOcrText(text)
+            self.main_screen.status.text = "Page added. Click the notes preview to edit, or capture another page."
+        else:
+            self.main_screen.status.text = "No readable text found. Try another photo or scan again."
 
     def togglePages(self, *_):
         if not self.running or self.processing.is_set():

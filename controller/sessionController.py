@@ -12,6 +12,8 @@ class SessionController:
         self.capture = None
         self.session_active = False
         self.completed_session = None
+        self.notes_text = ""
+        self.main_screen.ocr_text.bind(text=self.updateNotes)
         self.models = ModelService()
         self.ready = False
         self.closed = False
@@ -53,6 +55,7 @@ class SessionController:
                 self.initialize()
             return
         self.session_active = True
+        self.notes_text = ""
         self.main_screen.showModes()
 
     def chooseMode(self, mode):
@@ -78,6 +81,11 @@ class SessionController:
             except Exception as error:
                 self.main_screen.status.text = str(error)
 
+    def updateNotes(self, _, text):
+        self.notes_text = text
+        if not self.session_active and self.completed_session is not None:
+            self.completed_session["text"] = text
+
     def endSession(self, *_):
         pages = []
         if self.capture:
@@ -87,7 +95,7 @@ class SessionController:
             pages = list(capture.pages)
         self.session_active = False
         # Integration boundary for the future local document formatter.
-        self.completed_session = {"pages": pages, "text": "\n\n".join(pages),
+        self.completed_session = {"pages": pages, "text": self.notes_text,
                                   "formatting_status": "not_implemented"}
         self.main_screen.showHome(
             f"Session ended. {len(pages)} page(s) collected.\n"

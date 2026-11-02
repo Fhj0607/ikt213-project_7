@@ -9,7 +9,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.scrollview import ScrollView
+from kivy.uix.textinput import TextInput
 
 
 BACKGROUND = (0.035, 0.055, 0.09, 1)
@@ -112,16 +112,15 @@ class MainScreen(BoxLayout):
 
         self.text_card = self.card("02  /  RECOGNIZE", "Collected text")
         text_area = RelativeLayout()
-        self.text_hint = self.hint("A clear space for your words.\n\nRecognized pages will appear here in order.")
-        text_area.add_widget(self.text_hint)
-        text_scroll = ScrollView(do_scroll_x=False, bar_width=dp(5))
-        self.ocr_text = Label(text="", size_hint_y=None, halign="left", valign="top",
-                              font_size=dp(18), color=TEXT, padding=(dp(4), dp(8)))
-        self.ocr_text.bind(width=lambda widget, width: setattr(widget, "text_size", (width, None)))
-        self.ocr_text.bind(texture_size=lambda widget, size: setattr(widget, "height", size[1]))
-        self.ocr_text.bind(text=lambda _, text: setattr(self.text_hint, "opacity", 0 if text else 1))
-        text_scroll.add_widget(self.ocr_text)
-        text_area.add_widget(text_scroll)
+        self.ocr_text = TextInput(
+            text="", multiline=True, font_size=dp(18),
+            foreground_color=TEXT, cursor_color=ACCENT,
+            selection_color=(0.27, 0.87, 0.73, 0.3),
+            background_normal="", background_active="",
+            background_color=(0, 0, 0, 0),
+            hint_text="Recognized pages appear here. Click to edit your notes.",
+            hint_text_color=MUTED, padding=(dp(4), dp(8)))
+        text_area.add_widget(self.ocr_text)
         self.text_card.add_widget(text_area)
         self.workspace.add_widget(self.text_card)
 
@@ -260,3 +259,6 @@ class MainScreen(BoxLayout):
 
     def displayOcrOutput(self, text):
         self.ocr_text.text = text
+    def appendOcrText(self, text):
+        current = self.ocr_text.text
+        self.ocr_text.text = current + ("\n\n" if current else "") + text

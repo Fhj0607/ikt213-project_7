@@ -66,6 +66,8 @@ class SnapPrintApp(App):
         self.controller.stop()
 
     def onSpeechKey(self, window, key, scancode, codepoint, modifiers):
+        if self.main_screen.ocr_text.focus:
+            return False
         character = (codepoint or chr(key) if 0 <= key < 128 else "").lower()
         if key == 27 and self.controller.session_active:
             self.endSession()
@@ -73,7 +75,6 @@ class SnapPrintApp(App):
         if self.upload_popup:
             return False
         return self.controller.handleKey(key, character)
-
 
 if __name__ == "__main__":
     SnapPrintApp().run()
