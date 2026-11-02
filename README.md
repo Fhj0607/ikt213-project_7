@@ -146,3 +146,7 @@ Tune `TextGate` defaults in `ocr/text_gate.py`. Validate latency and missed dete
 Session lifecycle, mode selection, shortcut actions, upload eligibility, and the future formatting payload live in `controller/sessionController.py`. Camera capture, text detection, OCR, page mode, and speech policy live in `controller/snapPrintController.py`. `main.py` wires UI events and owns the file picker; `ui/mainScreen.py` owns presentation and styling.
 
 `ocr/model_service.py` owns the application-lifetime detector, VL reader, and serial model worker. Initialization, inference, and final cleanup share that worker so sessions cannot use or unload the same models concurrently.
+
+## Page alignment
+
+Before OCR-VL recognition, the machine-vision alignment algorithm detects a large quadrilateral page border, corrects its perspective when found, and deskews the image. If no border is found, it attempts deskewing only. Color is preserved. In two-page mode, the image is split at the center first and each half is aligned independently, left page first. Alignment runs after capture for both camera input and uploaded images; the live text detector still checks the original camera frame. Border detection is heuristic and should be evaluated with representative photographs.

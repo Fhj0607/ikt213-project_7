@@ -70,8 +70,9 @@ python main.py
 - After each capture, scanning remains paused even if the camera moves. Use
   Scan again (C) to begin another capture; the button is disabled during OCR.
 - Two-page mode splits exactly at the image center, left page first. Align
-  the page divide vertically with the camera center; automatic page detection
-  and perspective correction are not implemented here.
+  the page divide vertically with the camera center. Each half then passes
+  through page-border detection, perspective correction when a border is found,
+  and deskewing before OCR-VL recognition.
 - The camera requests 1920x1080; actual resolution depends on the camera.
 - Completion announces that text was recognized, the elapsed time, and that R
   reads the text aloud. VL has no equivalent of the previous line confidence

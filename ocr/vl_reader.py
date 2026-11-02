@@ -6,6 +6,8 @@ import time
 from html.parser import HTMLParser
 from pathlib import Path
 
+from processing.processingLibrary import alignImage
+
 
 class _TextContent(HTMLParser):
     """Keep readable content, excluding image markup and HTML attributes."""
@@ -98,6 +100,8 @@ class VLReader:
             pages = [image[:, :middle].copy(), image[:, middle:].copy()]
         texts = []
         for page in pages:
+            # Align after splitting a spread, preserving color for handwriting.
+            page, _ = alignImage(page)
             results = self.pipeline.predict(
                 page, max_pixels=self.max_pixels,
                 max_new_tokens=self.max_tokens, use_queues=False,
