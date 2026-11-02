@@ -92,3 +92,23 @@ class Speech:
             # Release the COM voice before its apartment is uninitialized.
             voice = None
             pythoncom.CoUninitialize()
+
+
+class SilentSpeech:
+    """Speech interface for visual capture modes, without an audio worker."""
+    error = None
+
+    def speak(self, text, interrupt=False):
+        pass
+
+    def announceQuality(self, assessment):
+        pass
+
+    def rememberResult(self, text):
+        pass
+
+    def stop(self):
+        pass
+
+    def close(self):
+        pass
