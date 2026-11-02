@@ -10,7 +10,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scrollview import ScrollView
-
+from kivy.core.clipboard import Clipboard
 
 BACKGROUND = (0.035, 0.055, 0.09, 1)
 SURFACE = (0.065, 0.095, 0.14, 1)
@@ -64,6 +64,11 @@ class MenuButton(Button):
 
 
 class MainScreen(BoxLayout):
+    def on_copy_click(self, instance):
+        text = self.ocr_text.text
+        if text.strip():
+            Clipboard.copy(text)
+
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", padding=dp(24), spacing=dp(16), **kwargs)
         rounded_background(self, BACKGROUND, 0)
@@ -112,6 +117,7 @@ class MainScreen(BoxLayout):
 
         self.text_card = self.card("02  /  RECOGNIZE", "Collected text")
         text_area = RelativeLayout()
+
         self.text_hint = self.hint("A clear space for your words.\n\nRecognized pages will appear here in order.")
         text_area.add_widget(self.text_hint)
         text_scroll = ScrollView(do_scroll_x=False, bar_width=dp(5))
@@ -122,6 +128,16 @@ class MainScreen(BoxLayout):
         self.ocr_text.bind(text=lambda _, text: setattr(self.text_hint, "opacity", 0 if text else 1))
         text_scroll.add_widget(self.ocr_text)
         text_area.add_widget(text_scroll)
+
+        copy_button = Button(
+            text="Copy",
+            size_hint=(None, None),
+            size=(dp(80), dp(36)),
+            pos_hint={"right": 0.98, "top": 1.2}
+        )
+        copy_button.bind(on_release=self.on_copy_click)
+        text_area.add_widget(copy_button)
+
         self.text_card.add_widget(text_area)
         self.workspace.add_widget(self.text_card)
 
