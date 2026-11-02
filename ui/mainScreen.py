@@ -1,5 +1,6 @@
 import cv2
 
+from kivy.core.clipboard import Clipboard
 from kivy.graphics import Color, RoundedRectangle
 from kivy.graphics.texture import Texture
 from kivy.metrics import dp
@@ -110,7 +111,13 @@ class MainScreen(BoxLayout):
         self.preview_card.add_widget(preview)
         self.workspace.add_widget(self.preview_card)
 
-        self.text_card = self.card("02  /  RECOGNIZE", "Collected text")
+        self.copy_button = self.button("Copy")
+        self.copy_button.size_hint_x = None
+        self.copy_button.width = dp(84)
+        self.copy_button.height = dp(36)
+        self.copy_button.disabled = True
+        self.copy_button.bind(on_release=self.on_copy_click)
+        self.text_card = self.card("02  /  RECOGNIZE", "Collected text", self.copy_button)
         text_area = RelativeLayout()
         self.ocr_text = TextInput(
             text="", multiline=True, font_size=dp(18),
@@ -120,6 +127,7 @@ class MainScreen(BoxLayout):
             background_color=(0, 0, 0, 0),
             hint_text="Recognized pages appear here. Click to edit your notes.",
             hint_text_color=MUTED, padding=(dp(4), dp(8)))
+        self.ocr_text.bind(text=lambda _, text: setattr(self.copy_button, "disabled", not text.strip()))
         text_area.add_widget(self.ocr_text)
         self.text_card.add_widget(text_area)
         self.workspace.add_widget(self.text_card)
@@ -153,17 +161,31 @@ class MainScreen(BoxLayout):
         label.bind(size=lambda widget, size: setattr(widget, "text_size", size))
         return label
 
-    def card(self, eyebrow, title):
+    def card(self, eyebrow, title, action=None):
         card = BoxLayout(orientation="vertical", padding=dp(20), spacing=dp(8))
         rounded_background(card, SURFACE)
         card.add_widget(self.label(eyebrow, font_size=10, color=ACCENT,
                                    size_hint_y=None, height=dp(16)))
-        card.add_widget(self.label(title, font_size=20, bold=True,
-                                   size_hint_y=None, height=dp(30)))
+        heading = BoxLayout(size_hint_y=None, height=dp(36), spacing=dp(8))
+        heading.add_widget(self.label(title, font_size=20, bold=True))
+        if action is not None:
+            heading.add_widget(action)
+        card.add_widget(heading)
         return card
 
     def button(self, text, **kwargs):
         return MenuButton(text=text, **kwargs)
+
+    def on_copy_click(self, *_):
+        text = self.ocr_text.text
+        if not text.strip():
+            return
+        try:
+            Clipboard.copy(text)
+        except Exception as error:
+            self.status.text = "Could not copy notes: " + str(error)
+        else:
+            self.status.text = "Notes copied to clipboard."
 
     def onPreviewTexture(self, _, texture):
         self.image_display.opacity = 1 if texture else 0
