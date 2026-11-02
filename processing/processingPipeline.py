@@ -3,13 +3,21 @@ from processing.processingLibrary import (
     sharpen,
     applyClahe,
     brighten,
-    darken
+    darken,
+    alignImage
 )
 
 def processImage(image, issues):
 
     processed_image = image.copy()
     report = []
+
+    processed_image, page_found = alignImage(processed_image)
+
+    if page_found:
+        report.append("Perspective-corrected and deskewed page")
+    else:
+        report.append("No page border found, only deskewed")
 
     if issues["too_dark"]:
         processed_image = brighten(processed_image)
