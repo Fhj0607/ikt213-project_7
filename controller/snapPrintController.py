@@ -12,7 +12,7 @@ from ocr.paddleOcr import extractText
 from processing.processingPipeline import processImage
 from processing.qualityAssessment import QualityAssessment
 from processing.processingLibrary import (toGrayscale, resizeImage)
-
+from speech.textToSpeech import TextToSpeech
 
 
 QUALITY_CHECK_INTERVAL = 0.5
@@ -45,6 +45,7 @@ class SnapPrintController:
 
         self.last_quality_check = 0.0
 
+        self.tts = TextToSpeech()
 
 
     def start(self):
@@ -58,7 +59,7 @@ class SnapPrintController:
         capture_thread = threading.Thread(target=self.captureLoop, daemon=True)
 
         capture_thread.start()
-
+        self.tts.start()
 
 
     def stop(self):
@@ -69,7 +70,7 @@ class SnapPrintController:
 
         self.processing_worker.shutdown(wait=False, cancel_futures=True)
 
-
+        self.tts.stop()
 
     def captureLoop(self):
 
@@ -102,7 +103,7 @@ class SnapPrintController:
 
         if not assessment["acceptable"]:
             return
-
+        self.tts.speak("Page captured")
         self.captured_frame = frame.copy()
 
         self.state = self.WAITING_FOR_CHANGE
@@ -162,7 +163,10 @@ class SnapPrintController:
             processed_image, report = processImage(frame, issues)
 
             text = extractText(processed_image)
-
+            if text.strip():
+                self.tts.speak(text)
+            else:
+                self.tts.speak("No text found")
             Clock.schedule_once(
                 lambda dt, output=text:
                 self.main_screen
