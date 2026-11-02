@@ -24,14 +24,20 @@ def prepareForOcr(image):
 
 
 
-def extractText(image):
+def extractResult(image):
     image = prepareForOcr(image)
 
     results = ocr.predict(image)
 
     texts = []
+    scores = []
 
     for result in results:
         texts.extend(result["rec_texts"])
+        scores.extend(float(score) for score in result.get("rec_scores", []))
 
-    return "\n".join(texts)
+    return "\n".join(texts), sum(scores) / len(scores) if scores else None
+
+
+def extractText(image):
+    return extractResult(image)[0]

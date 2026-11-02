@@ -13,8 +13,21 @@ results/*.jpeg
 
 # Environment / secrets
 .env
+.venv-vl/
+.models/
 
 # Local development / test data
 experiments/
 results/
 images/
+
+# Local verification scripts and artifacts
+tests/
+test/
+
+# Local model directories and virtual environments
+model/
+models/
+venv.vl/
+venv-vl/
+.venv.vl/
