@@ -31,3 +31,7 @@ models/
 venv.vl/
 venv-vl/
 .venv.vl/
+
+# CNN training datasets and trained weights
+cnn/datasets/
+cnn/models/
