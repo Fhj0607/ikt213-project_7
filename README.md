@@ -117,7 +117,7 @@ python main.py
 
 Start a session, then choose **Live capture** for automatic page capture with spoken positioning guidance, or **Take photos or upload images** for manual OCR input. Uploads are processed locally and do not require a camera. Photos/uploads mode is silent, including OCR status and page-mode changes; spoken guidance is reserved for live capture. In photo mode, the first **Take photo** opens the preview; press it again to capture a page.
 
-Recognized pages accumulate in order. **End session** stops capture and speech, keeps completed text visible, and prepares an in-memory `SessionController.completed_session` payload (`pages`, `text`, `formatting_status`) for future local LLM integration. Document creation and formatting are not implemented. Ending during OCR discards the unfinished page. Session data is not saved to disk; starting and ending another session replaces the previous payload.
+Recognized pages accumulate in order. **End session** stops capture and speech and keeps completed text visible. Choose **Create Word document** to summarize the collected text locally with Ollama and save a consistently formatted `.docx` under `results/documents/`. The saved path appears in the app. The document contains a title, Summary, Key points, Detailed notes, Unclear passages, and an Original OCR text appendix. It is a generated draft for review. Ending during OCR discards the unfinished page. Session text stays in memory until replaced by a later session; exported documents remain on disk. See [local summarization setup](LLM_SETUP.md) for model setup and CLI usage.
 
 - **S:** start a session.
 - **L / P:** choose live capture / photos and uploads.

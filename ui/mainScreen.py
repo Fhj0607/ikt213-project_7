@@ -131,6 +131,7 @@ class MainScreen(BoxLayout):
         self.add_widget(self.footer)
 
         self.start_button = self.button("Start session (S)", emphasis=True)
+        self.create_document_button = self.button("Create Word document", emphasis=True)
         self.live_button = self.button("Live capture with spoken guidance (L)", emphasis=True)
         self.photos_button = self.button("Take photos or upload images (P)")
         self.capture_button = self.button("Take photo (C)", emphasis=True)

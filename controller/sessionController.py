@@ -3,6 +3,7 @@ from kivy.clock import Clock
 
 from controller.snapPrintController import SnapPrintController
 from ocr.model_service import ModelService
+from output.document_service import createDocument
 
 
 class SessionController:
@@ -18,6 +19,7 @@ class SessionController:
         self.loading = False
         self.load_error = None
         self.gate_type = "detector"
+        self.document_pending = False
 
     def initialize(self):
         if self.loading or self.ready or self.closed:
@@ -47,7 +49,7 @@ class SessionController:
         self.main_screen.showHome("Ready. Start a session to collect pages for a document.")
 
     def startSession(self, *_):
-        if self.closed or self.session_active:
+        if self.closed or self.session_active or self.document_pending:
             return
         if not self.ready:
             if self.load_error:
@@ -80,6 +82,8 @@ class SessionController:
                 self.main_screen.status.text = str(error)
 
     def endSession(self, *_):
+        if not self.session_active:
+            return
         pages = []
         if self.capture:
             capture = self.capture
@@ -87,13 +91,48 @@ class SessionController:
             capture.stop()
             pages = list(capture.pages)
         self.session_active = False
-        # Integration boundary for the future local document formatter.
         self.completed_session = {"pages": pages, "text": "\n\n".join(pages),
-                                  "formatting_status": "not_implemented"}
-        self.main_screen.showHome(
-            f"Session ended. {len(pages)} page(s) collected.\n"
-            "Document creation and formatting are not yet available.")
+                                  "formatting_status": "ready" if any(p.strip() for p in pages) else "empty"}
+        self.showCompletedSession(f"Session ended. {len(pages)} page(s) collected.")
         self.main_screen.displayOcrOutput(self.completed_session["text"])
+
+    def showCompletedSession(self, message):
+        self.main_screen.showHome(message)
+        if self.completed_session and self.completed_session["text"].strip():
+            self.main_screen.setActions([self.main_screen.create_document_button,
+                                         self.main_screen.start_button])
+
+    def createDocument(self, *_):
+        session = self.completed_session
+        if (self.closed or self.session_active or self.document_pending
+                or not session or not session["text"].strip()):
+            return
+        self.document_pending = True
+        session["formatting_status"] = "processing"
+        self.main_screen.start_button.disabled = True
+        self.main_screen.create_document_button.disabled = True
+        self.main_screen.stage.text = "CREATING DOCUMENT"
+        self.main_screen.status.text = "Summarizing your pages and creating a Word document. Please wait."
+        # Reuse the serial worker so unfinished OCR completes before summarization.
+        future = self.models.worker.submit(createDocument, list(session["pages"]))
+        future.add_done_callback(lambda result: Clock.schedule_once(
+            lambda dt: self.documentCreated(session, result)))
+
+    def documentCreated(self, session, future):
+        self.document_pending = False
+        if self.closed:
+            return
+        self.main_screen.start_button.disabled = False
+        self.main_screen.create_document_button.disabled = False
+        try:
+            summary, path = future.result()
+        except Exception as error:
+            session["formatting_status"] = "failed"
+            self.showCompletedSession(f"Document creation failed: {error}\nYour OCR text is retained. You can retry.")
+            return
+        session.update(formatting_status="complete", summary=summary, document_path=str(path))
+        self.showCompletedSession(f"Word document saved:\n{path}")
+        self.main_screen.displayOcrOutput(summary["title"] + "\n\n" + summary["summary"])
 
     def canUpload(self):
         return bool(self.capture and self.capture.mode == "photos"
