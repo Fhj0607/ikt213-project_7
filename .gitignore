@@ -34,4 +34,3 @@ venv-vl/
 
 # CNN training datasets and trained weights
 cnn/datasets/
-cnn/models/

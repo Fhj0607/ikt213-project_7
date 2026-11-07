@@ -17,6 +17,7 @@ class SessionController:
         self.closed = False
         self.loading = False
         self.load_error = None
+        self.gate_type = "detector"
 
     def initialize(self):
         if self.loading or self.ready or self.closed:
@@ -58,7 +59,7 @@ class SessionController:
     def chooseMode(self, mode):
         if not self.ready or self.closed or mode not in ("live", "photos") or not self.session_active or self.capture:
             return
-        capture = SnapPrintController(self.main_screen, self.models)
+        capture = SnapPrintController(self.main_screen, self.models, gate_type=self.gate_type)
         self.capture = capture
         self.main_screen.showCapture(mode)
         capture.setBusy(False)
@@ -109,6 +110,14 @@ class SessionController:
     def togglePages(self, *_):
         if self.capture:
             self.capture.togglePages()
+
+    def toggleGate(self, *_):
+        if self.gate_type == "detector":
+            self.gate_type = "cnn"
+            self.main_screen.gate_button.text = "Text filter: CNN"
+        else:
+            self.gate_type = "detector"
+            self.main_screen.gate_button.text = "Text filter: PaddleOCR"
 
     def stop(self):
         if self.closed:

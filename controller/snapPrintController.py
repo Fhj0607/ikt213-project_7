@@ -25,7 +25,7 @@ class SnapPrintController:
     SCANNING = "SCANNING"
     PAUSED = "PAUSED"
 
-    def __init__(self, main_screen, models=None):
+    def __init__(self, main_screen, models=None, gate_type="detector"):
         self.main_screen = main_screen
 
         self.camera = Camera()
@@ -33,7 +33,15 @@ class SnapPrintController:
         self.speech = SilentSpeech()
         self.owns_models = models is None
         self.reader = VLReader() if models is None else models.reader
-        self.text_gate = TextGate() if models is None else models.text_gate
+        if models is None:
+            if gate_type == "cnn":
+                from cnn.textClassifier import CNNTextGate
+                self.text_gate = CNNTextGate()
+            else:
+                self.text_gate = TextGate()
+        else:
+            self.text_gate = models.getGate(gate_type)
+        self.gate_type = gate_type
         self.gate_future = None
         self.gate_hits = 0
         self.gate_generation = 0

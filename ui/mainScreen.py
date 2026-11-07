@@ -135,6 +135,7 @@ class MainScreen(BoxLayout):
         self.photos_button = self.button("Take photos or upload images (P)")
         self.capture_button = self.button("Take photo (C)", emphasis=True)
         self.upload_button = self.button("Upload image (U)")
+        self.gate_button = self.button("Text filter: PaddleOCR")
         self.force_capture_button = self.button("Capture now (F)")
         self.scan_again_button = self.button("Scan next page (C)", emphasis=True)
         self.end_button = self.button("End session (Esc)", danger=True)
@@ -227,7 +228,7 @@ class MainScreen(BoxLayout):
         self.status.text = "How would you like to capture your pages? You can end the session at any time."
         self.preview_hint.text = PREVIEW_HINT
         self.ocr_text.text = ""
-        self.setActions([self.live_button, self.photos_button, self.end_button])
+        self.setActions([self.live_button, self.photos_button, self.gate_button, self.end_button])
 
     def showCapture(self, mode):
         self.footer.text = "LOCAL OCR    /    Space to stop speech" if mode == "live" else "LOCAL OCR"
