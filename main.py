@@ -16,8 +16,10 @@ class SnapPrintApp(App):
         self.controller = SessionController(self.main_screen, self.chooseUpload)
         for button, callback in (
             (self.main_screen.start_button, self.controller.startSession),
+            (self.main_screen.create_document_button, self.controller.createDocument),
             (self.main_screen.live_button, lambda *_: self.controller.chooseMode("live")),
             (self.main_screen.photos_button, lambda *_: self.controller.chooseMode("photos")),
+            (self.main_screen.gate_button, self.controller.toggleGate),
             (self.main_screen.end_button, self.endSession),
             (self.main_screen.capture_button, lambda *_: self.controller.perform("takePhoto")),
             (self.main_screen.scan_again_button, lambda *_: self.controller.perform("requestScan")),

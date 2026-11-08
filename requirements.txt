@@ -3,3 +3,4 @@ paddlex==3.7.2
 transformers==5.20.2
 kivy==2.3.1
 pywin32==312
+python-docx==1.2.0

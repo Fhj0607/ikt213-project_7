@@ -3,6 +3,8 @@
 import os
 import re
 import time
+import torch
+
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -44,11 +46,26 @@ def readable_text(content):
 
 
 class VLReader:
-    def __init__(self, device='gpu:0', max_pixels=1003520, max_tokens=2048):
+
+    def __init__(self, device=None, max_pixels=1003520, max_tokens=2048):
+        if device is None:
+            device = os.environ.get("SNAPPRINT_OCR_DEVICE", "auto")
+
+        if device == "auto":
+            device = "gpu:0" if torch.cuda.is_available() else "cpu"
+
+        if device.startswith("gpu") and not torch.cuda.is_available():
+            raise RuntimeError(
+                "GPU requested, but CUDA is unavailable." 
+                "Select CPU or auto instead."
+            )
+
         self.device = device
         self.max_pixels = max_pixels
         self.max_tokens = max_tokens
         self.pipeline = None
+
+        print(f"PaddleOCR-VL device: {self.device}")
 
     def load(self):
         if self.pipeline is not None:
