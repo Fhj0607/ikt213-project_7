@@ -99,18 +99,9 @@ class SessionController:
             capture.stop()
             pages = list(capture.pages)
         self.session_active = False
-<<<<<<< HEAD
-        # Integration boundary for the future local document formatter.
         self.completed_session = {"pages": pages, "text": self.notes_text,
-                                  "formatting_status": "not_implemented"}
-        self.main_screen.showHome(
-            f"Session ended. {len(pages)} page(s) collected.\n"
-            "Document creation and formatting are not yet available.")
-=======
-        self.completed_session = {"pages": pages, "text": "\n\n".join(pages),
-                                  "formatting_status": "ready" if any(p.strip() for p in pages) else "empty"}
+                                  "formatting_status": "ready" if self.notes_text.strip() else "empty"}
         self.showCompletedSession(f"Session ended. {len(pages)} page(s) collected.")
->>>>>>> llm
         self.main_screen.displayOcrOutput(self.completed_session["text"])
 
     def showCompletedSession(self, message):
@@ -131,7 +122,7 @@ class SessionController:
         self.main_screen.stage.text = "CREATING DOCUMENT"
         self.main_screen.status.text = "Summarizing your pages and creating a Word document. Please wait."
         # Reuse the serial worker so unfinished OCR completes before summarization.
-        future = self.models.worker.submit(createDocument, list(session["pages"]))
+        future = self.models.worker.submit(createDocument, [session["text"]])
         future.add_done_callback(lambda result: Clock.schedule_once(
             lambda dt: self.documentCreated(session, result)))
 
@@ -149,7 +140,7 @@ class SessionController:
             return
         session.update(formatting_status="complete", summary=summary, document_path=str(path))
         self.showCompletedSession(f"Word document saved:\n{path}")
-        self.main_screen.displayOcrOutput(summary["title"] + "\n\n" + summary["summary"])
+        # Keep editable source notes available for review and another export.
 
     def canUpload(self):
         return bool(self.capture and self.capture.mode == "photos"

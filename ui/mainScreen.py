@@ -283,9 +283,6 @@ class MainScreen(BoxLayout):
 
     def displayOcrOutput(self, text):
         self.ocr_text.text = text
-<<<<<<< HEAD
     def appendOcrText(self, text):
         current = self.ocr_text.text
         self.ocr_text.text = current + ("\n\n" if current else "") + text
-=======
->>>>>>> llm

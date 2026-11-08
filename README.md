@@ -29,7 +29,7 @@ After installation, open **Miniconda Prompt** or **Anaconda Prompt**.
 Clone the repository:
 
 ```bash
-git clone --branch fabian https://github.com/Fhj0607/ikt213-project_7.git
+git clone --branch main https://github.com/Fhj0607/ikt213-project_7.git
 cd ikt213-project_7
 ```
 
@@ -117,11 +117,8 @@ python main.py
 
 Start a session, then choose **Live capture** for automatic page capture with spoken positioning guidance, or **Take photos or upload images** for manual OCR input. Uploads are processed locally and do not require a camera. Photos/uploads mode is silent, including OCR status and page-mode changes; spoken guidance is reserved for live capture. In photo mode, the first **Take photo** opens the preview; press it again to capture a page.
 
-<<<<<<< HEAD
-Recognized pages accumulate in order. Use **Copy** in the collected-text header to copy all current notes, including your edits, to the clipboard. The button is disabled for empty notes. Click the notes preview to edit text at any time, including while the next page is being recognized. New pages append to your edited notes; recognition status and errors appear separately. Capture shortcuts are inactive while typing in the preview. The session payload keeps raw OCR in `pages` and your edited notes in `text`. Edits after ending a session also update its in-memory text. **End session** stops capture and speech, keeps completed text visible, and prepares an in-memory `SessionController.completed_session` payload (`pages`, `text`, `formatting_status`) for future local LLM integration. Document creation and formatting are not implemented. Ending during OCR discards the unfinished page. Session data is not saved to disk; starting and ending another session replaces the previous payload.
-=======
-Recognized pages accumulate in order. **End session** stops capture and speech and keeps completed text visible. Choose **Create Word document** to summarize the collected text locally with Ollama and save a consistently formatted `.docx` under `results/documents/`. The saved path appears in the app. The document contains a title, Summary, Key points, Detailed notes, Unclear passages, and an Original OCR text appendix. It is a generated draft for review. Ending during OCR discards the unfinished page. Session text stays in memory until replaced by a later session; exported documents remain on disk. See [local summarization setup](LLM_SETUP.md) for model setup and CLI usage.
->>>>>>> llm
+Recognized pages accumulate in order. Click the preview to edit notes; new pages append to your edits. Use **Copy** to copy the current notes. Document export uses your edited notes and keeps them visible after saving. **End session** stops capture and speech and keeps completed text visible. Choose **Create Word document** to summarize the collected text locally with Ollama and save a consistently formatted `.docx` under `results/documents/`. The saved path appears in the app. The document contains a title, Summary, Key points, Detailed notes, Unclear passages, and an Original OCR text appendix. It is a generated draft for review. Ending during OCR discards the unfinished page. Session text stays in memory until replaced by a later session; exported documents remain on disk. See [local summarization setup](LLM_SETUP.md) for model setup and CLI usage.
+
 
 - **S:** start a session.
 - **L / P:** choose live capture / photos and uploads.
@@ -154,3 +151,9 @@ Session lifecycle, mode selection, shortcut actions, upload eligibility, and the
 ## Page alignment
 
 Before OCR-VL recognition, the machine-vision alignment algorithm detects a large quadrilateral page border, corrects its perspective when found, and deskews the image. If no border is found, it attempts deskewing only. Color is preserved. In two-page mode, the image is split at the center first and each half is aligned independently, left page first. Alignment runs after capture for both camera input and uploaded images; the live text detector still checks the original camera frame. Border detection is heuristic and should be evaluated with representative photographs.
+
+## Alternative live text filters
+
+Before choosing capture mode, the text-filter button cycles through PaddleOCR, CNN, and HOG + SVM. Photos, uploads, and forced capture bypass the live text filter. The CNN weights are included in `cnn/textCNN.pth`. HOG requires a locally trained `hog/models/hog_svm.joblib`; the weights and training data are not included. Prepare the COCO-Text dataset with the CNN dataset tools, then run `python -m hog.makeDataset` and `python -m hog.trainHog`. See `python -m hog.runAll --help` for the training and benchmark workflow.
+
+Page alignment runs before OCR, correcting perspective when a page border is found and deskewing text. In two-page mode each half is aligned separately before recognition.
