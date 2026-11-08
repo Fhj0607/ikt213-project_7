@@ -58,6 +58,8 @@ def verify(args):
         models.reader = VLReader(device="gpu:0" if args.device == "cuda" else "cpu")
         try:
             models.load(lambda message: print(message, flush=True))
+            # Explicit setup prefetch; normal app startup leaves gates lazy.
+            models.getGate("detector").load()
             print("OCR detector and recognition models loaded.", flush=True)
         finally:
             models.close()

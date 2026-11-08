@@ -146,7 +146,7 @@ Recognized pages accumulate in order. Click the preview to edit notes; new pages
 
 Keep PyCharm's interpreter set to the `snapprint` Conda environment. At startup, recognition models load on a background worker with visible loading stages. Model loading can take over a minute. Session controls become available when initialization completes; a loading failure offers a retry. Models stay loaded across scans and sessions, and are released when the application exits. Ending a session stops capture and suppresses late results; an inference already running completes before the shared worker processes a new session.
 
-Development tests and generated results are kept locally and are excluded from the published repository.
+Gate-selection regression checks are in `tests/test_gate_choice.py`. Other development tests and generated results are kept locally and excluded from the published repository.
 
 See [PaddleOCR-VL setup and validation](PADDLEOCR_VL.md) for saved-image testing, memory settings, and limitations.
 
@@ -156,7 +156,7 @@ Automatic live capture checks stability and then runs the CPU-only `PP-OCRv5_mob
 
 At least one text region with score >= 0.55 and area >= 16 pixels squared must appear in two consecutive stable checks. A negative result, a changed page, or instability when detection returns resets confirmation. Transient movement during a detector job does not invalidate it if the same page is stable again when the result returns. VL receives the original full-resolution candidate, then scanning pauses until **Scan next page / C**. These are initial tuning values, not measured accuracy guarantees.
 
-**Capture now / F** bypasses the detector for handwriting or faint text it misses. Photos and uploaded images also bypass it. If detection fails, automatic capture remains blocked and manual capture stays available. Initial startup may download detector weights; later launches use the PaddleX cache under `.models`. Detector loading now happens during application startup. Ending a session suppresses pending results, but cannot interrupt model inference already running.
+**Capture now / F** bypasses the selected gate for handwriting or faint text it misses. Photos and uploaded images also bypass it. If detection fails, automatic capture remains blocked and manual capture stays available. App startup loads the full OCR reader; the selected gate loads on its first live check, on the shared worker. The other gate methods do not run. The OCR detector may download weights on first use and later reuses the PaddleX cache under `.models`. Ending a session suppresses pending results, but cannot interrupt model inference already running.
 
 Tune `TextGate` defaults in `ocr/text_gate.py`. Validate latency and missed detections with representative camera samples on the target machine. The UI displays detector loading/checking status; timings measured on the development machine are not performance guarantees.
 
@@ -170,6 +170,6 @@ Before OCR-VL recognition, the machine-vision alignment algorithm detects a larg
 
 ## Alternative live text filters
 
-Before choosing capture mode, the text-filter button cycles through PaddleOCR, CNN, and HOG + SVM. Photos, uploads, and forced capture bypass the live text filter. The CNN weights are included in `cnn/textCNN.pth`. HOG requires a locally trained `hog/models/hog_svm.joblib`; the weights and training data are not included. Prepare the COCO-Text dataset with the CNN dataset tools, then run `python -m hog.makeDataset` and `python -m hog.trainHog`. See `python -m hog.runAll --help` for the training and benchmark workflow.
+Before choosing capture mode, press **Text gate: ... (choose)** and select **OCR detector**, **CNN**, or **HOG + SVM**. The current selection is highlighted. These are three alternative solutions to the same cheap preprocessing question: does this frame contain text? Only the selected method runs; they are not combined. The choice is fixed for the current capture session. Full PaddleOCR-VL transcription is a separate stage after capture. Photos, uploads, and forced capture bypass the gate. The CNN weights are included in `cnn/textCNN.pth`. HOG requires a locally trained `hog/models/hog_svm.joblib`; the weights and training data are not included. Prepare the COCO-Text dataset with the CNN dataset tools, then run `python -m hog.makeDataset` and `python -m hog.trainHog`. See `python -m hog.runAll --help` for the training and benchmark workflow.
 
 Page alignment runs before OCR, correcting perspective when a page border is found and deskewing text. In two-page mode each half is aligned separately before recognition.

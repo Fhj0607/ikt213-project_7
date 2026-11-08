@@ -143,7 +143,7 @@ class MainScreen(BoxLayout):
         self.photos_button = self.button("Take photos or upload images (P)")
         self.capture_button = self.button("Take photo (C)", emphasis=True)
         self.upload_button = self.button("Upload image (U)")
-        self.gate_button = self.button("Text filter: PaddleOCR")
+        self.gate_button = self.button("Text gate: OCR detector (choose)")
         self.force_capture_button = self.button("Capture now (F)")
         self.scan_again_button = self.button("Scan next page (C)", emphasis=True)
         self.end_button = self.button("End session (Esc)", danger=True)

@@ -158,16 +158,14 @@ class SessionController:
         if self.capture:
             self.capture.togglePages()
 
-    def toggleGate(self, *_):
-        if self.gate_type == "detector":
-            self.gate_type = "cnn"
-            self.main_screen.gate_button.text = "Text filter: CNN"
-        elif self.gate_type == "cnn":
-            self.gate_type = "hog"
-            self.main_screen.gate_button.text = "Text filter: HOG + SVM"
-        else:
-            self.gate_type = "detector"
-            self.main_screen.gate_button.text = "Text filter: PaddleOCR"
+    def selectGate(self, gate_type):
+        names = {"detector": "OCR detector", "cnn": "CNN", "hog": "HOG + SVM"}
+        if gate_type not in names:
+            raise ValueError(f"Unknown text gate: {gate_type}")
+        if self.closed or self.capture or self.document_pending:
+            return
+        self.gate_type = gate_type
+        self.main_screen.gate_button.text = f"Text gate: {names[gate_type]} (choose)"
 
     def stop(self):
         if self.closed:

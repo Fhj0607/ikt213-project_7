@@ -33,10 +33,9 @@ class ModelService:
         raise ValueError(f"Unknown text filter: {gate_type}")
 
     def load(self, progress):
-        progress("Loading text detector (1/2)...")
-        self.text_gate.load()
-
-        progress("Loading document recognition models (2/2)...")
+        # The live gate is an alternative chosen later by the user. Each gate
+        # loads itself on its first detect(), on this same serial worker.
+        progress("Loading document recognition models...")
         self.reader.load()
 
     def close(self):
