@@ -13,6 +13,7 @@ class ModelService:
         self.cnn_gate = None
         self.worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="snapprint-models")
         self.closed = False
+        self.hog_gate = None
 
     def getGate(self, gate_type):
         if gate_type == "cnn":
@@ -20,6 +21,11 @@ class ModelService:
                 from cnn.textClassifier import CNNTextGate
                 self.cnn_gate = CNNTextGate()
             return self.cnn_gate
+        if gate_type == "hog":
+            if self.hog_gate is None:
+                from hog.hogTextGate import HogTextGate
+                self.hog_gate = HogTextGate()
+            return self.hog_gate
 
         if gate_type == "detector":
             return self.text_gate
@@ -49,3 +55,5 @@ class ModelService:
 
             if self.cnn_gate is not None:
                 self.cnn_gate.close()
+            if self.hog_gate is not None:
+                self.hog_gate.close()
