@@ -176,7 +176,7 @@ try {
     # pip considers a CPU wheel to satisfy the same version as a CUDA wheel.
     # Force replacement only when an existing environment has the other backend.
     $torchFlags = @()
-    $backend = & $envPython -c 'import importlib.util; print("missing" if importlib.util.find_spec("torch") is None else __import__("torch").version.cuda or "cpu")'
+    $backend = & $envPython -c "import importlib.util; print('missing' if importlib.util.find_spec('torch') is None else __import__('torch').version.cuda or 'cpu')"
     if ($LASTEXITCODE -ne 0) { throw 'Existing PyTorch cannot be inspected. Repair or move aside .venv-vl and rerun setup.' }
     if (($selectedDevice -eq 'cuda' -and $backend -eq 'cpu') -or
         ($selectedDevice -eq 'cpu' -and $backend -notin @('cpu', 'missing'))) {
