@@ -5,16 +5,32 @@ SnapPrint is a local Python desktop application for printed and handwritten text
 ## Requirements
 
 - Windows (the desktop app currently uses Windows-specific speech support).
-- Python 3.11 and Miniconda or Anaconda for environment management.
-- For the desktop app: a CUDA-capable NVIDIA GPU supported by the installed PyTorch build and the application's bfloat16 inference settings. A specific GPU model is not required.
+- 64-bit Python 3.11. Automated setup creates a virtual environment; Miniconda or Anaconda is optional for manual installation.
+- A CUDA-capable NVIDIA GPU with bfloat16 support is recommended for OCR speed. CPU OCR is also available and can be substantially slower and more memory intensive.
 - A camera for live capture or taking photos. Uploaded images do not require a camera.
 - Internet access for dependency installation and the initial model downloads, plus disk space for the environment and model weights.
 
 Memory use and recognition speed depend on image resolution, document complexity, and inference settings. No general minimum RAM or VRAM requirement has been established. Hardware measurements in [PADDLEOCR_VL.md](PADDLEOCR_VL.md) describe one tested configuration, not a required specification.
 
-CPU-only saved-image recognition is also available through `vl_scan.py --device cpu`; the desktop app currently defaults to `gpu:0` and does not automatically fall back to CPU. AMD/Intel GPU and macOS/Linux desktop support have not been validated.
+CPU-only saved-image recognition is available through `vl_scan.py --device cpu`. The desktop reader selects CUDA when available and otherwise CPU; the setup launcher uses the device selected during installation. AMD/Intel GPU acceleration and macOS/Linux desktop support have not been validated.
 
 ## Installation
+
+### Automated Windows setup
+
+From PowerShell in the cloned repository:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\run-snapprint.ps1
+```
+
+Setup installs Python 3.11 if needed, creates `.venv-vl`, installs dependencies
+and Ollama, downloads/verifies Qwen, preloads OCR models, and validates local
+summarization and Word export. It selects CPU or CUDA and saves the choice for
+the launcher. The optional HOG model must be supplied or trained separately.
+See [full setup instructions and options](SETUP.md), including CPU mode and
+prerequisite checks. The following Conda steps remain a manual alternative.
 
 ### 1. Install Miniconda
 

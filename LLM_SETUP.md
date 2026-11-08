@@ -4,6 +4,10 @@ The proof-of-concept model is Qwen3.5 2B in Q4_K_M GGUF format.
 The weights live in `.models/llm/qwen3.5-2b/`, separate from application code.
 The existing `.gitignore` excludes `.models/`; do not commit the model weights.
 
+For automatic download, checksum verification, Ollama installation/import,
+and a summarization smoke test, run `powershell -NoProfile -ExecutionPolicy
+Bypass -File .\setup.ps1` from the repository root. See [Windows setup](SETUP.md).
+
 ## Download provenance
 
 - Original model: https://huggingface.co/Qwen/Qwen3.5-2B
