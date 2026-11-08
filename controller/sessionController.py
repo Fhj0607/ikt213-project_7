@@ -171,6 +171,9 @@ class SessionController:
         if self.gate_type == "detector":
             self.gate_type = "cnn"
             self.main_screen.gate_button.text = "Text filter: CNN"
+        elif self.gate_type == "cnn":
+            self.gate_type = "hog"
+            self.main_screen.gate_button.text = "Text filter: HOG + SVM"
         else:
             self.gate_type = "detector"
             self.main_screen.gate_button.text = "Text filter: PaddleOCR"

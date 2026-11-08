@@ -37,6 +37,9 @@ class SnapPrintController:
             if gate_type == "cnn":
                 from cnn.textClassifier import CNNTextGate
                 self.text_gate = CNNTextGate()
+            elif gate_type == "hog":
+                from hog.hogTextGate import HogTextGate
+                self.text_gate = HogTextGate()
             else:
                 self.text_gate = TextGate()
         else:
