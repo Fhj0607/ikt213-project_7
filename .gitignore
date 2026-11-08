@@ -27,10 +27,10 @@ test/
 
 # Local model directories and virtual environments
 model/
-models/
 venv.vl/
 venv-vl/
 .venv.vl/
 
 # CNN training datasets and trained weights
 cnn/datasets/
+

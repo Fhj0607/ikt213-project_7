@@ -1,11 +1,17 @@
 import cv2
 import numpy as np
 
+
+
 def toGrayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+
+
 def resizeImage(image, width, height):
     return cv2.resize(image,(width, height))
+
+
 
 def sharpen(image):
     kernel = np.array([
@@ -16,10 +22,14 @@ def sharpen(image):
 
     return cv2.filter2D(image, -1, kernel)
 
+
+
 def applyClahe(image):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
     return clahe.apply(image)
+
+
 
 def brighten(image, amount=30):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -32,6 +42,8 @@ def brighten(image, amount=30):
 
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
+
+
 def darken(image, amount=30):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
@@ -43,8 +55,9 @@ def darken(image, amount=30):
 
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
+
+
 def orderPoints(points):
-    """Return corners as top-left, top-right, bottom-right, bottom-left."""
     points = points.reshape(4, 2).astype(np.float32)
 
     sums = points.sum(axis=1)
@@ -60,7 +73,6 @@ def orderPoints(points):
 
 
 def findPage(image):
-    """Find the 4 corners of the largest quadrilateral (the page). None if not found."""
     ratio = image.shape[0] / 800.0
 
     small = resizeImage(image, int(image.shape[1] / ratio), 800)
@@ -88,7 +100,6 @@ def findPage(image):
 
 
 def warpPage(image, corners):
-    """Perspective-correct the page to a flat rectangle."""
     tl, tr, br, bl = orderPoints(corners)
 
     width = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)))
@@ -108,7 +119,6 @@ def warpPage(image, corners):
 
 
 def deskew(image):
-    """Rotate so text lines are horizontal (fixes small tilts, up to ±45°)."""
     gray = toGrayscale(image)
 
     thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
@@ -134,7 +144,6 @@ def deskew(image):
 
 
 def alignImage(image):
-    """Flatten the page if its border is found, then deskew. Returns (image, page_found)."""
     corners = findPage(image)
 
     page_found = corners is not None

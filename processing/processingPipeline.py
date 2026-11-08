@@ -7,6 +7,8 @@ from processing.processingLibrary import (
     alignImage
 )
 
+
+
 def processImage(image, issues):
 
     processed_image = image.copy()

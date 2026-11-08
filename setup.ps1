@@ -49,7 +49,10 @@ function Find-Python {
     }
     $pyCommand = Get-Command py.exe -ErrorAction SilentlyContinue
     if ($pyCommand) {
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
         $located = & $pyCommand.Source -3.11 -c 'import sys; print(sys.executable)' 2>$null
+        $ErrorActionPreference = $previous
         if ($LASTEXITCODE -eq 0 -and $located) { $candidates += [string]$located }
     }
     foreach ($candidate in $candidates) {
