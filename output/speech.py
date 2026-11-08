@@ -10,7 +10,6 @@ class Speech:
     def __init__(self, cooldown=8.0):
         self.cooldown = cooldown
         self._last_guidance = float('-inf')
-        self._last_result = ''
         self.error = None
         self._commands = queue.Queue()
         self._closed = threading.Event()
@@ -37,23 +36,6 @@ class Speech:
         if messages:
             self._last_guidance = now
             self.speak(' '.join(messages))
-
-    def announceResult(self, text, confidence):
-        if not text.strip():
-            message = 'No readable text found. Please scan again.'
-        elif confidence is None:
-            message = 'Text detected. OCR confidence is unavailable.'
-        else:
-            message = f'Average OCR confidence: {confidence * 100:.0f} percent.'
-        self._last_result = message
-        self.speak(message, interrupt=True)
-
-    def repeat(self):
-        self.speak(self._last_result or 'No text to read. Press C to scan again.', interrupt=True)
-
-    def rememberResult(self, text):
-        """Store document text for repeat without automatically reading it."""
-        self._last_result = text
 
     def stop(self):
         if not self._closed.is_set():
@@ -102,9 +84,6 @@ class SilentSpeech:
         pass
 
     def announceQuality(self, assessment):
-        pass
-
-    def rememberResult(self, text):
         pass
 
     def stop(self):

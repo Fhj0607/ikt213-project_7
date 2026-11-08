@@ -11,6 +11,28 @@ MIN_CONTRAST = 25.0
 STABILITY_THRESHOLD = 6.0
 REQUIRED_STABLE_FRAMES = 3
 
+
+def assessImage(image):
+    """Measure one image without changing the live camera's stability history."""
+    gray_image = image if image.ndim == 2 else toGrayscale(image)
+    sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
+    brightness_score = np.mean(gray_image)
+    contrast_score = np.std(gray_image)
+    return {
+        "issues": {
+            "blurry": bool(sharpness_score < MIN_SHARPNESS),
+            "too_dark": bool(brightness_score < MIN_BRIGHTNESS),
+            "too_bright": bool(brightness_score > MAX_BRIGHTNESS),
+            "low_contrast": bool(contrast_score < MIN_CONTRAST),
+        },
+        "scores": {
+            "sharpness_score": float(sharpness_score),
+            "brightness_score": float(brightness_score),
+            "contrast_score": float(contrast_score),
+        },
+    }
+
+
 class QualityAssessment:
 
     def __init__(self):
@@ -55,42 +77,9 @@ class QualityAssessment:
         return stable, float(mean_difference)
 
     def assessFrame(self, frame):
-
         gray_image = toGrayscale(frame)
-
+        assessment = assessImage(gray_image)
         stable, difference_score = self.checkStability(gray_image)
-
-        sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
-
-        brightness_score = np.mean(gray_image)
-
-        contrast_score = np.std(gray_image)
-
-        blurry = sharpness_score < MIN_SHARPNESS
-
-        too_dark = brightness_score < MIN_BRIGHTNESS
-
-        too_bright = brightness_score > MAX_BRIGHTNESS
-
-        low_contrast = contrast_score < MIN_CONTRAST
-
-        return {
-            "acceptable": stable,
-
-            "stable": stable,
-            "stable_count": self.stable_count,
-
-            "issues": {
-                "blurry": blurry,
-                "too_dark": too_dark,
-                "too_bright": too_bright,
-                "low_contrast": low_contrast
-            },
-
-            "scores": {
-                "sharpness_score": float(sharpness_score),
-                "brightness_score": float(brightness_score),
-                "contrast_score": float(contrast_score),
-                "difference_score": difference_score
-            }
-        }
+        assessment.update(acceptable=stable, stable=stable, stable_count=self.stable_count)
+        assessment["scores"]["difference_score"] = difference_score
+        return assessment

@@ -22,6 +22,7 @@ class SnapPrintApp(App):
             (self.main_screen.live_button, lambda *_: self.controller.chooseMode("live")),
             (self.main_screen.photos_button, lambda *_: self.controller.chooseMode("photos")),
             (self.main_screen.gate_button, self.chooseGate),
+            (self.main_screen.enhance_button, self.controller.toggleEnhancement),
             (self.main_screen.end_button, self.endSession),
             (self.main_screen.capture_button, lambda *_: self.controller.perform("takePhoto")),
             (self.main_screen.scan_again_button, lambda *_: self.controller.perform("requestScan")),

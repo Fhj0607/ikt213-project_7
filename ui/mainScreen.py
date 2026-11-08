@@ -144,6 +144,7 @@ class MainScreen(BoxLayout):
         self.capture_button = self.button("Take photo (C)", emphasis=True)
         self.upload_button = self.button("Upload image (U)")
         self.gate_button = self.button("Text gate: OCR detector (choose)")
+        self.enhance_button = self.button("Enhance images: Off")
         self.force_capture_button = self.button("Capture now (F)")
         self.scan_again_button = self.button("Scan next page (C)", emphasis=True)
         self.end_button = self.button("End session (Esc)", danger=True)
@@ -250,7 +251,14 @@ class MainScreen(BoxLayout):
         self.status.text = "How would you like to capture your pages? You can end the session at any time."
         self.preview_hint.text = PREVIEW_HINT
         self.ocr_text.text = ""
-        self.setActions([self.live_button, self.photos_button, self.gate_button, self.end_button])
+        self.setActions([self.live_button, self.photos_button, self.gate_button,
+                         self.enhance_button, self.end_button])
+
+    def setEnhancement(self, enabled):
+        self.enhance_button.text = "Enhance images: " + ("On" if enabled else "Off")
+        self.enhance_button.base_color = ACCENT if enabled else (0.12, 0.17, 0.23, 1)
+        self.enhance_button.color = BACKGROUND if enabled else TEXT
+        self.enhance_button.refresh()
 
     def showCapture(self, mode):
         self.footer.text = "LOCAL OCR    /    Space to stop speech" if mode == "live" else "LOCAL OCR"

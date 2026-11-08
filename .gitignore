@@ -6,11 +6,6 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Generated results
-results/*.png
-results/*.jpg
-results/*.jpeg
-
 # Environment / secrets
 .env
 .venv-vl/
@@ -31,6 +26,7 @@ venv.vl/
 venv-vl/
 .venv.vl/
 
-# CNN training datasets and trained weights
+# Local training data and generated benchmark examples
 cnn/datasets/
+cnn/benchmark_images/
 

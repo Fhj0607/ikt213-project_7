@@ -21,6 +21,7 @@ class SessionController:
         self.loading = False
         self.load_error = None
         self.gate_type = "detector"
+        self.enhance_images = False
         self.document_pending = False
 
     def initialize(self):
@@ -64,7 +65,8 @@ class SessionController:
     def chooseMode(self, mode):
         if not self.ready or self.closed or mode not in ("live", "photos") or not self.session_active or self.capture:
             return
-        capture = SnapPrintController(self.main_screen, self.models, gate_type=self.gate_type)
+        capture = SnapPrintController(self.main_screen, self.models, gate_type=self.gate_type,
+                                      enhance_images=self.enhance_images)
         self.capture = capture
         self.main_screen.showCapture(mode)
         capture.setBusy(False)
@@ -157,6 +159,12 @@ class SessionController:
     def togglePages(self, *_):
         if self.capture:
             self.capture.togglePages()
+
+    def toggleEnhancement(self, *_):
+        if self.closed or self.capture or self.document_pending:
+            return
+        self.enhance_images = not self.enhance_images
+        self.main_screen.setEnhancement(self.enhance_images)
 
     def selectGate(self, gate_type):
         names = {"detector": "OCR detector", "cnn": "CNN", "hog": "HOG + SVM"}

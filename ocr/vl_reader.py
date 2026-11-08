@@ -8,7 +8,7 @@ import torch
 from html.parser import HTMLParser
 from pathlib import Path
 
-from processing.processingLibrary import alignImage
+from processing.processingPipeline import processImage
 
 
 class _TextContent(HTMLParser):
@@ -107,7 +107,7 @@ class VLReader:
             use_ocr_for_image_block=True,
         )
 
-    def read(self, image, two_pages=False):
+    def read(self, image, two_pages=False, enhance=False):
         self.load()
         start = time.perf_counter()
         # Explicit two-page mode assumes a centered, vertical page divide.
@@ -117,8 +117,8 @@ class VLReader:
             pages = [image[:, :middle].copy(), image[:, middle:].copy()]
         texts = []
         for page in pages:
-            # Align after splitting a spread, preserving color for handwriting.
-            page, _ = alignImage(page)
+            # Align every page. Optional enhancement is shared by all input modes.
+            page, _ = processImage(page, enhance=enhance)
             results = self.pipeline.predict(
                 page, max_pixels=self.max_pixels,
                 max_new_tokens=self.max_tokens, use_queues=False,

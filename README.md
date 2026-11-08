@@ -10,7 +10,7 @@ SnapPrint is a local Python desktop application for printed and handwritten text
 - A camera for live capture or taking photos. Uploaded images do not require a camera.
 - Internet access for dependency installation and the initial model downloads, plus disk space for the environment and model weights.
 
-Memory use and recognition speed depend on image resolution, document complexity, and inference settings. No general minimum RAM or VRAM requirement has been established. Hardware measurements in [PADDLEOCR_VL.md](PADDLEOCR_VL.md) describe one tested configuration, not a required specification.
+Memory use and recognition speed depend on image resolution, document complexity, and inference settings. No general minimum RAM or VRAM requirement has been established.
 
 CPU-only saved-image recognition is available through `vl_scan.py --device cpu`. The desktop reader selects CUDA when available and otherwise CPU; the setup launcher uses the device selected during installation. AMD/Intel GPU acceleration and macOS/Linux desktop support have not been validated.
 
@@ -28,7 +28,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-snapprint.ps1
 Setup installs Python 3.11 if needed, creates `.venv-vl`, installs dependencies
 and Ollama, downloads/verifies Qwen, preloads OCR models, and validates local
 summarization and Word export. It selects CPU or CUDA and saves the choice for
-the launcher. The optional HOG model must be supplied or trained separately.
+the launcher. The CNN and HOG gate weights are included; training data is optional.
 See [full setup instructions and options](SETUP.md), including CPU mode and
 prerequisite checks. The following Conda steps remain a manual alternative.
 
@@ -146,13 +146,13 @@ Recognized pages accumulate in order. Click the preview to edit notes; new pages
 
 Keep PyCharm's interpreter set to the `snapprint` Conda environment. At startup, recognition models load on a background worker with visible loading stages. Model loading can take over a minute. Session controls become available when initialization completes; a loading failure offers a retry. Models stay loaded across scans and sessions, and are released when the application exits. Ending a session stops capture and suppresses late results; an inference already running completes before the shared worker processes a new session.
 
-Gate-selection regression checks are in `tests/test_gate_choice.py`. Other development tests and generated results are kept locally and excluded from the published repository.
+Development tests and generated results are kept locally and excluded from the published repository.
 
-See [PaddleOCR-VL setup and validation](PADDLEOCR_VL.md) for saved-image testing, memory settings, and limitations.
+See [PaddleOCR-VL setup and input options](PADDLEOCR_VL.md) for saved-image testing, memory settings, and limitations.
 
-## Experimental live text gate
+## Live capture gate
 
-Automatic live capture checks stability and then runs the CPU-only `PP-OCRv5_mobile_det` text detector on a copy capped at 960 pixels on the longest side. Detection runs on a worker, at most once per 500 ms camera check, with no overlapping detector jobs. Full OCR recognition is skipped at this stage.
+Automatic live capture checks stability and then uses the selected text gate. With the OCR detector selected, the CPU-only `PP-OCRv5_mobile_det` model checks a copy capped at 960 pixels on the longest side. Detection runs on a worker, at most once per 500 ms camera check, with no overlapping detector jobs. Full OCR recognition is skipped at this stage.
 
 At least one text region with score >= 0.55 and area >= 16 pixels squared must appear in two consecutive stable checks. A negative result, a changed page, or instability when detection returns resets confirmation. Transient movement during a detector job does not invalidate it if the same page is stable again when the result returns. VL receives the original full-resolution candidate, then scanning pauses until **Scan next page / C**. These are initial tuning values, not measured accuracy guarantees.
 
@@ -160,16 +160,20 @@ At least one text region with score >= 0.55 and area >= 16 pixels squared must a
 
 Tune `TextGate` defaults in `ocr/text_gate.py`. Validate latency and missed detections with representative camera samples on the target machine. The UI displays detector loading/checking status; timings measured on the development machine are not performance guarantees.
 
-Session lifecycle, mode selection, shortcut actions, upload eligibility, and the future formatting payload live in `controller/sessionController.py`. Camera capture, text detection, OCR, page mode, and speech policy live in `controller/snapPrintController.py`. `main.py` wires UI events and owns the file picker; `ui/mainScreen.py` owns presentation and styling.
+Session lifecycle, mode selection, shortcut actions, upload eligibility, and document export live in `controller/sessionController.py`. Camera capture, text detection, OCR, page mode, and speech policy live in `controller/snapPrintController.py`. `main.py` wires UI events and owns the file picker; `ui/mainScreen.py` owns presentation and styling.
 
 `ocr/model_service.py` owns the application-lifetime detector, VL reader, and serial model worker. Initialization, inference, and final cleanup share that worker so sessions cannot use or unload the same models concurrently.
 
-## Page alignment
+## Image preprocessing before OCR
 
-Before OCR-VL recognition, the machine-vision alignment algorithm detects a large quadrilateral page border, corrects its perspective when found, and deskews the image. If no border is found, it attempts deskewing only. Color is preserved. In two-page mode, the image is split at the center first and each half is aligned independently, left page first. Alignment runs after capture for both camera input and uploaded images; the live text detector still checks the original camera frame. Border detection is heuristic and should be evaluated with representative photographs.
+Before OCR-VL recognition, the machine-vision alignment algorithm detects a large quadrilateral page border, corrects its perspective when found, and deskews the image. If no border is found, it attempts deskewing only. In two-page mode, the image is split at the center first and each half is processed independently, left page first.
+
+**Enhance images** is available on the capture-mode screen and is **Off by default**. Alignment and deskewing always run. Turn enhancement On before choosing live capture or photos/uploads; the setting applies to every page in that capture session.
+
+When enhancement is On, the aligned page is assessed for brightness, blur, and contrast. Dark pages are brightened, overly bright pages are darkened, blurry pages are sharpened, and low-contrast pages receive CLAHE. Sharpening or CLAHE uses grayscale, converted back to three identical channels for VL; otherwise color is retained. Otsu thresholding is used to estimate deskew, rather than applied as a final binarization step.
+
+With enhancement enabled, the resulting enhanced image is passed to PaddleOCR-VL for **every input path: automatic live capture, forced capture, manually taken photos, and uploaded images**. Manual inputs bypass only the cheap text-detection gate, not preprocessing. The live text gate still examines the original camera frame. Border detection and quality thresholds are heuristic and need evaluation on representative documents.
 
 ## Alternative live text filters
 
-Before choosing capture mode, press **Text gate: ... (choose)** and select **OCR detector**, **CNN**, or **HOG + SVM**. The current selection is highlighted. These are three alternative solutions to the same cheap preprocessing question: does this frame contain text? Only the selected method runs; they are not combined. The choice is fixed for the current capture session. Full PaddleOCR-VL transcription is a separate stage after capture. Photos, uploads, and forced capture bypass the gate. The CNN weights are included in `cnn/textCNN.pth`. HOG requires a locally trained `hog/models/hog_svm.joblib`; the weights and training data are not included. Prepare the COCO-Text dataset with the CNN dataset tools, then run `python -m hog.makeDataset` and `python -m hog.trainHog`. See `python -m hog.runAll --help` for the training and benchmark workflow.
-
-Page alignment runs before OCR, correcting perspective when a page border is found and deskewing text. In two-page mode each half is aligned separately before recognition.
+Before choosing capture mode, press **Text gate: ... (choose)** and select **OCR detector**, **CNN**, or **HOG + SVM**. The current selection is highlighted. These are three alternative solutions to the same cheap preprocessing question: does this frame contain text? Only the selected method runs; they are not combined. The choice is fixed for the current capture session. Full PaddleOCR-VL transcription is a separate stage after capture. Photos, uploads, and forced capture bypass the gate. The CNN and HOG weights are included in `cnn/textCNN.pth` and `hog/models/hog_svm.joblib`. Training data is not included. Prepare the COCO-Text dataset with the CNN dataset tools, then run `python -m hog.makeDataset` and `python -m hog.trainHog`.

@@ -95,10 +95,9 @@ OCR accuracy, or full-session performance test.
 
 ## Optional HOG filter
 
-The repository contains the CNN weights, but no trained HOG weights or training
-dataset. The default setup prepares PaddleOCR, CNN, and Qwen; it reports HOG as
-unavailable until you provide or train its model. It does not substitute random
-weights or silently train on unrelated images.
+The repository includes CNN weights and the trained HOG model at
+`hog/models/hog_svm.joblib`. Setup checks that available weights load. Training
+data is not included. You can replace the HOG weights or retrain them if needed.
 
 To install a HOG model supplied by a trusted project contributor:
 
@@ -106,7 +105,7 @@ To install a HOG model supplied by a trusted project contributor:
 .\setup.ps1 -HogModelPath 'C:\Downloads\hog_svm.joblib'
 ```
 
-This copies it to ignored `hog/models/hog_svm.joblib` and checks that it loads.
+This replaces `hog/models/hog_svm.joblib` and checks that it loads.
 Joblib models execute Python during loading, so use files from a trusted source.
 The scikit-learn version should match the version used to train those weights.
 
@@ -124,7 +123,7 @@ dataset tool (this may download a large dataset):
 `cnn/datasets/noText` directories. It builds patches, trains and tunes the SVM,
 and loads the resulting model. Training takes additional time; its quality
 depends on the training and validation data. Do not combine it with
-`-HogModelPath`. Training data, environments, and downloaded models stay out of Git.
+`-HogModelPath`. Training data, environments, and downloaded OCR/LLM models stay out of Git.
 
 ## References
 

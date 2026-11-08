@@ -25,7 +25,7 @@ class SnapPrintController:
     SCANNING = "SCANNING"
     PAUSED = "PAUSED"
 
-    def __init__(self, main_screen, models=None, gate_type="detector"):
+    def __init__(self, main_screen, models=None, gate_type="detector", enhance_images=False):
         self.main_screen = main_screen
 
         self.camera = Camera()
@@ -45,6 +45,7 @@ class SnapPrintController:
         else:
             self.text_gate = models.getGate(gate_type)
         self.gate_type = gate_type
+        self.enhance_images = enhance_images
         self.gate_future = None
         self.gate_hits = 0
         self.gate_generation = 0
@@ -64,8 +65,6 @@ class SnapPrintController:
         self.capture_thread = None
         self.running = False
         self.state = self.SCANNING
-
-        self.captured_frame = None
 
         self.last_quality_check = 0.0
 
@@ -247,30 +246,27 @@ class SnapPrintController:
     def submitFrame(self, frame):
         if not self.running or self.processing.is_set():
             return
-        issues = {}
         self.processing.set()
-        self.speech.rememberResult('')
         self.speech.speak('Page captured. Reading document.', interrupt=True)
         self.scheduleUi(lambda: setattr(self.main_screen.status, "text", "Page captured. Reading document..."))
         self.scheduleUi(lambda: self.setBusy(True))
 
         self.processing_future = self.processing_worker.submit(
             self.processFrame,
-            frame.copy(),
-            issues
+            frame.copy()
         )
 
 
 
-    def processFrame(self, frame, issues):
+    def processFrame(self, frame):
 
         try:
             if not self.running:
                 return
 
-            # Preserve color and fine handwriting strokes for the VLM.
+            # The reader aligns and conditionally enhances each captured page.
             started = time.monotonic()
-            text, _ = self.reader.read(frame, self.two_pages)
+            text, _ = self.reader.read(frame, self.two_pages, enhance=self.enhance_images)
             elapsed = time.monotonic() - started
             if not self.running:
                 return
