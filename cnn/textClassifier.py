@@ -10,7 +10,6 @@ from torchvision.models import mobilenet_v3_small
 from processing.processingLibrary import resizeImage
 
 
-
 class CNNTextGate:
     def __init__(self, threshold=0.2):
         self.threshold = threshold

@@ -111,5 +111,6 @@ class SnapPrintApp(App):
             return False
         return self.controller.handleKey(key, character)
 
+
 if __name__ == "__main__":
     SnapPrintApp().run()

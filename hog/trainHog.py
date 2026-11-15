@@ -16,12 +16,10 @@ from hog.hogTextGate import DEFAULT_MODEL, HogTextGate
 from hog.makeDataset import OUTPUT_FOLDER
 
 
-
 C_VALUES = [0.001, 0.01, 0.1, 1.0]
 
 PROBABILITY_THRESHOLDS = [0.5, 0.6, 0.7, 0.8, 0.9]
 REGION_SIZES = range(1, 61)
-
 
 
 def trainPatchClassifier(data_folder):
@@ -59,7 +57,6 @@ def trainPatchClassifier(data_folder):
     model.fit(features, labels)
 
     return model, best_c
-
 
 
 def tuneImageDecision(model_path, validation_images):
@@ -142,7 +139,6 @@ def main():
 
     print(f"Total training time {time.perf_counter() - start:.1f} s")
     print(f"Saved {out} ({out.stat().st_size / 1024:.0f} KB)")
-
 
 
 if __name__ == "__main__":

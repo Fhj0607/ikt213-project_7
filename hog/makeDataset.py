@@ -8,7 +8,6 @@ import numpy as np
 from hog.hogFeatures import PATCH_SIZE, WINDOW_STRIDE, prepareFrame, slidingWindows
 
 
-
 COCO_TEXT_JSON = Path("cnn/datasets/raw/cocotext.v2.json")
 OUTPUT_FOLDER = Path("cnn/datasets/hogPatches")
 
@@ -20,7 +19,6 @@ NON_TEXT_PATCHES = 20
 
 PREVIEW_COUNT = 20
 SEED = 42
-
 
 
 def loadTextBoxes(json_path):
@@ -40,7 +38,6 @@ def loadTextBoxes(json_path):
     return boxes
 
 
-
 def textMask(frame_shape, gray_shape, boxes):
     """1 inside text boxes, 0 elsewhere, at the same scale as the HOG windows."""
     mask = np.zeros(frame_shape[:2], np.uint8)
@@ -52,7 +49,6 @@ def textMask(frame_shape, gray_shape, boxes):
         mask[y1:y2, x1:x2] = 1
 
     return cv2.resize(mask, (gray_shape[1], gray_shape[0]), interpolation=cv2.INTER_NEAREST)
-
 
 
 def patchesFromImage(image_path, boxes, rng):
@@ -90,7 +86,6 @@ def patchesFromImage(image_path, boxes, rng):
     }
 
 
-
 def drawLabels(gray, text_positions, non_text_positions):
     """Green = text patch, red = non-text patch. Check these before training."""
     preview = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
@@ -101,7 +96,6 @@ def drawLabels(gray, text_positions, non_text_positions):
             cv2.rectangle(preview, (x, y), (x + PATCH_SIZE - 1, y + PATCH_SIZE - 1), colour, 1)
 
     return preview
-
 
 
 def balanceClasses(patches, labels, image_ids, rng):
@@ -119,7 +113,6 @@ def balanceClasses(patches, labels, image_ids, rng):
     keep.sort()
 
     return patches[keep], labels[keep], image_ids[keep]
-
 
 
 def main():
@@ -171,7 +164,6 @@ def main():
     print(f"Saved {len(labels)} balanced patches from {len(np.unique(image_ids))} images "
           f"to {OUTPUT_FOLDER / 'train.npz'}")
     print(f"Check the label previews in {OUTPUT_FOLDER / 'previews'}")
-
 
 
 if __name__ == "__main__":

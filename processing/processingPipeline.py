@@ -11,7 +11,6 @@ from processing.processingLibrary import (
 )
 
 
-
 def processImage(image, issues=None, enhance=True):
     """Always align; optionally assess and correct image quality before OCR."""
 

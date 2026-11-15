@@ -69,7 +69,6 @@ class MainScreen(BoxLayout):
         super().__init__(orientation="vertical", padding=dp(24), spacing=dp(16), **kwargs)
         rounded_background(self, BACKGROUND, 0)
 
-        # --- Header: brand on the left, stage on the right ------------------
         header = BoxLayout(size_hint_y=None, height=dp(56), spacing=dp(12))
         brand = BoxLayout(orientation="vertical")
         self.title = self.label("SnapPrint", font_size=30, bold=True,
@@ -83,7 +82,6 @@ class MainScreen(BoxLayout):
         header.add_widget(self.stage)
         self.add_widget(header)
 
-        # --- Status line: grows with its text instead of reserving 64dp -----
         self.status = Label(text="", font_size=dp(17), color=TEXT, halign="left",
                             valign="middle", size_hint_y=None, height=dp(32))
         self.status.bind(
@@ -91,16 +89,13 @@ class MainScreen(BoxLayout):
             texture_size=lambda widget, size: setattr(widget, "height", max(dp(32), size[1] + dp(8))))
         self.add_widget(self.status)
 
-        # --- Actions ---------------------------------------------------------
         self.actions = GridLayout(cols=2, spacing=dp(BUTTON_GAP), size_hint_y=None)
         self.add_widget(self.actions)
 
-        # --- Workspace: two cards --------------------------------------------
         self.workspace = BoxLayout(spacing=dp(16))
         self.add_widget(self.workspace)
 
-        # RelativeLayout (not FloatLayout): children without a pos_hint are
-        # positioned relative to the layout itself, so they stay inside the card.
+        # Keep preview children positioned relative to their card.
         self.preview_card = self.card("01  /  CAPTURE", "Camera preview")
         preview = RelativeLayout()
         self.preview_hint = self.hint(PREVIEW_HINT)
@@ -132,7 +127,6 @@ class MainScreen(BoxLayout):
         self.text_card.add_widget(text_area)
         self.workspace.add_widget(self.text_card)
 
-        # --- Footer ----------------------------------------------------------
         self.footer = self.label("LOCAL OCR", font_size=11,
                                  color=MUTED, size_hint_y=None, height=dp(20))
         self.add_widget(self.footer)
@@ -152,7 +146,6 @@ class MainScreen(BoxLayout):
         self.bind(size=self.reflow)
         self.showHome()
 
-    # ------------------------------------------------------------------ helpers
     def label(self, text, font_size=18, color=TEXT, halign="left", **kwargs):
         label = Label(text=text, font_size=dp(font_size), color=color,
                       halign=halign, valign="middle", **kwargs)
@@ -194,7 +187,6 @@ class MainScreen(BoxLayout):
         self.image_display.opacity = 1 if texture else 0
         self.preview_hint.opacity = 0 if texture else 1
 
-    # ------------------------------------------------------------------- layout
     def reflow(self, *_):
         width = self.width
         padding = dp(24) if width >= dp(580) else dp(12)
@@ -204,12 +196,10 @@ class MainScreen(BoxLayout):
 
         count = len(self.actions.children)
         if count <= 1:
-            # A lone primary action stays compact instead of a full-width slab.
             cols = 1
             self.actions.size_hint_x = None
             self.actions.width = min(dp(START_BUTTON_WIDTH), max(dp(100), width - 2 * padding))
         else:
-            # As many columns as fit at a comfortable button width (one row when wide).
             fit = int((width - 2 * padding) // dp(BUTTON_MIN_WIDTH))
             cols = max(1, min(count, fit))
             self.actions.size_hint_x = 1
@@ -224,7 +214,6 @@ class MainScreen(BoxLayout):
             self.actions.add_widget(button)
         self.reflow()
 
-    # ------------------------------------------------------------------- states
     def showLoading(self, message):
         self.showHome(message)
         self.stage.text = "INITIALIZING"
@@ -291,6 +280,7 @@ class MainScreen(BoxLayout):
 
     def displayOcrOutput(self, text):
         self.ocr_text.text = text
+
     def appendOcrText(self, text):
         current = self.ocr_text.text
         self.ocr_text.text = current + ("\n\n" if current else "") + text

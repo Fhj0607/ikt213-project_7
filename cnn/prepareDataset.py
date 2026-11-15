@@ -1,4 +1,3 @@
-
 import json
 import shutil
 import tempfile
@@ -113,6 +112,7 @@ def prepareDataset():
     print("\nDataset rebuilt!")
     print("Text images:", text_count)
     print("No-text images:", no_text_count)
+
 
 if __name__ == "__main__":
     prepareDataset()

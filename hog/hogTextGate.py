@@ -14,12 +14,13 @@ from hog.hogFeatures import (
 
 DEFAULT_MODEL = Path(__file__).resolve().parent / "models" / "hog_svm.joblib"
 
+
 class HogTextGate:
 
     def __init__(self, model_path=DEFAULT_MODEL, probability_threshold=None, min_region_windows=None):
         self.model_path = Path(model_path)
 
-        # None = use the values tuned on the validation set during training
+        # None uses saved thresholds, with defaults for older model files.
         self.probability_threshold = probability_threshold
         self.min_region_windows = min_region_windows
 
@@ -42,13 +43,11 @@ class HogTextGate:
         if self.min_region_windows is None:
             self.min_region_windows = saved.get("min_region_windows", 12)
 
-
     def predictPatches(self, patches):
         """Probability of text for each (PATCH_SIZE x PATCH_SIZE) grayscale patch."""
         self.load()
 
         return self.model.predict_proba(hogFeatures(patches))[:, 1]
-
 
     def textMap(self, frame):
         """Text probability for every sliding window, as a (rows, cols) grid."""
@@ -84,14 +83,8 @@ class HogTextGate:
 
         return int(sizes.max()) if len(sizes) else 0
 
-
-
     def textRegions(self, probabilities):
-        """Keep only connected groups of text windows that are big enough.
-
-        Real text forms connected blocks in the window grid, while false hits
-        on clutter are scattered small groups.
-        """
+        """Keep connected groups that meet the minimum window count."""
         labels, sizes = self.regionSizes(probabilities)
 
         keep_labels = np.flatnonzero(sizes >= self.min_region_windows) + 1
@@ -104,7 +97,6 @@ class HogTextGate:
         probabilities, _ = self.textMap(frame)
 
         return self.largestRegion(probabilities) >= self.min_region_windows
-
 
     def drawDetections(self, frame):
         """Frame (scaled like the detector sees it) with text regions shaded green."""

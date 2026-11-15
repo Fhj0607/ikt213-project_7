@@ -1,4 +1,4 @@
-"""Local full-page PaddleOCR-VL reader, loaded only on first recognition."""
+"""Local PaddleOCR-VL reader; load explicitly or on the first read."""
 
 import os
 import re
@@ -70,7 +70,7 @@ class VLReader:
     def load(self):
         if self.pipeline is not None:
             return
-        # Keep downloaded models in the project; recognition is entirely local.
+        # Use project-local caches unless the environment specifies another location.
         root = Path(__file__).resolve().parents[1]
         os.environ.setdefault('PADDLE_PDX_CACHE_HOME', str(root / '.models' / 'paddlex'))
         os.environ.setdefault('HF_HOME', str(root / '.models' / 'huggingface'))
@@ -117,7 +117,6 @@ class VLReader:
             pages = [image[:, :middle].copy(), image[:, middle:].copy()]
         texts = []
         for page in pages:
-            # Align every page. Optional enhancement is shared by all input modes.
             page, _ = processImage(page, enhance=enhance)
             results = self.pipeline.predict(
                 page, max_pixels=self.max_pixels,

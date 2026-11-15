@@ -9,7 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 from processing.processingLibrary import resizeImage
 
 
-
 class TextDataset(Dataset):
     def __init__(self, samples):
         self.samples = samples
@@ -23,7 +22,6 @@ class TextDataset(Dataset):
         image = prepareImage(image_path)
 
         return image, torch.tensor(label, dtype=torch.float32)
-
 
 
 def loadDataset():
@@ -57,7 +55,6 @@ def loadDataset():
     return train, validation, test
 
 
-
 def splitImages(images):
     train_end = int(len(images) * 0.70)
     validation_end = int(len(images) * 0.85)
@@ -67,8 +64,6 @@ def splitImages(images):
     test = images[validation_end:]
 
     return train, validation, test
-
-
 
 
 def prepareImage(image_path):
@@ -96,7 +91,6 @@ def prepareImage(image_path):
     return image
 
 
-
 def createModel():
     model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT)
 
@@ -106,7 +100,6 @@ def createModel():
     model.classifier[3] = nn.Linear(1024, 1)
 
     return model
-
 
 
 def trainModel(model, train_loader, validation_loader, epochs=5):
@@ -147,7 +140,6 @@ def trainModel(model, train_loader, validation_loader, epochs=5):
             torch.save(model.state_dict(), "cnn/textCNN.pth")
 
             print("Saved new best model!")
-
 
 
 def evaluateModel(model, validation_loader, threshold=0.5):
@@ -191,7 +183,6 @@ def evaluateModel(model, validation_loader, threshold=0.5):
     return accuracy
 
 
-
 def testThresholds(model, validation_loader):
     model.load_state_dict(
         torch.load("cnn/textCNN.pth", weights_only=True)
@@ -202,7 +193,6 @@ def testThresholds(model, validation_loader):
     for threshold in thresholds:
         print()
         evaluateModel(model, validation_loader, threshold)
-
 
 
 if __name__ == "__main__":

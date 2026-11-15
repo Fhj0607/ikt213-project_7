@@ -142,7 +142,6 @@ class SessionController:
             return
         session.update(formatting_status="complete", summary=summary, document_path=str(path))
         self.showCompletedSession(f"Word document saved:\n{path}")
-        # Keep editable source notes available for review and another export.
 
     def canUpload(self):
         return bool(self.capture and self.capture.mode == "photos"

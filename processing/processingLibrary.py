@@ -2,15 +2,12 @@ import cv2
 import numpy as np
 
 
-
 def toGrayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 
-
 def resizeImage(image, width, height):
     return cv2.resize(image,(width, height))
-
 
 
 def sharpen(image):
@@ -23,12 +20,10 @@ def sharpen(image):
     return cv2.filter2D(image, -1, kernel)
 
 
-
 def applyClahe(image):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
     return clahe.apply(image)
-
 
 
 def brighten(image, amount=30):
@@ -43,7 +38,6 @@ def brighten(image, amount=30):
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
 
-
 def darken(image, amount=30):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
@@ -54,7 +48,6 @@ def darken(image, amount=30):
     hsv = cv2.merge((h, s, v))
 
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-
 
 
 def orderPoints(points):
@@ -69,7 +62,6 @@ def orderPoints(points):
         points[np.argmax(sums)],
         points[np.argmax(differences)]
     ], dtype=np.float32)
-
 
 
 def findPage(image):
@@ -98,7 +90,6 @@ def findPage(image):
     return None
 
 
-
 def warpPage(image, corners):
     tl, tr, br, bl = orderPoints(corners)
 
@@ -115,7 +106,6 @@ def warpPage(image, corners):
     matrix = cv2.getPerspectiveTransform(np.array([tl, tr, br, bl]), destination)
 
     return cv2.warpPerspective(image, matrix, (width, height))
-
 
 
 def deskew(image):
@@ -142,7 +132,6 @@ def deskew(image):
     return cv2.warpAffine(image, matrix, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
 
 
-
 def alignImage(image):
     corners = findPage(image)
 
@@ -152,4 +141,3 @@ def alignImage(image):
         image = warpPage(image, corners)
 
     return deskew(image), page_found
-

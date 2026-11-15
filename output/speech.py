@@ -62,8 +62,8 @@ class Speech:
                 if action == 'stop':
                     voice.Speak('', 3)  # asynchronous + purge queued speech
                 elif interrupt or voice.Status.RunningState != 2:
-                    # Drop guidance while speaking; never build a stale backlog.
-                    # OCR may contain angle brackets; always speak literal text.
+                    # Skip noninterrupting speech while the voice is active.
+                    # Flags 17/19 request asynchronous, literal-text speech.
                     voice.Speak(text, 19 if interrupt else 17)
                 pythoncom.PumpWaitingMessages()
             voice.Speak('', 3)

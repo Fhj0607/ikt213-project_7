@@ -1,14 +1,11 @@
 import cv2
 
 
-
 class Camera:
 
     def __init__(self, camera_index=0):
         self.camera_index = camera_index
         self.camera = None
-
-
 
     def start(self):
         self.camera = cv2.VideoCapture(self.camera_index)
@@ -17,8 +14,6 @@ class Camera:
 
         if not self.camera.isOpened():
             raise RuntimeError("Could not start camera")
-
-
 
     def captureFrame(self):
         if self.camera is None:
@@ -30,8 +25,6 @@ class Camera:
             raise RuntimeError("Could not capture frame")
 
         return frame
-
-
 
     def stop(self):
         if self.camera is not None:

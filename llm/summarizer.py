@@ -34,6 +34,7 @@ Return only JSON matching this schema:
 
 def validateSummary(data):
     """Reject malformed model output before it reaches the document writer."""
+
     def strings(value):
         return isinstance(value, list) and all(
             isinstance(item, str) and item.strip() for item in value)

@@ -14,8 +14,10 @@ HOG = cv2.HOGDescriptor(
     (8, 8),
     9
 )
+
+
 def prepareFrame(frame):
-    """Grayscale, scaled so the longest side is MAX_SIDE pixels."""
+    """Convert to grayscale and scale, keeping each side at least PATCH_SIZE."""
     if frame.ndim == 3:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -30,6 +32,7 @@ def prepareFrame(frame):
 
     return cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
 
+
 def slidingWindows(image):
     """View of every window as a (rows, cols, PATCH_SIZE, PATCH_SIZE) array."""
     windows = np.lib.stride_tricks.sliding_window_view(
@@ -38,6 +41,7 @@ def slidingWindows(image):
     )
 
     return windows[::WINDOW_STRIDE, ::WINDOW_STRIDE]
+
 
 def hogFeatures(patches):
     """HOG vector for each patch in an (N, PATCH_SIZE, PATCH_SIZE) uint8 array."""

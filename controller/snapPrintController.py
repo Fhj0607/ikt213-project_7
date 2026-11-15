@@ -14,10 +14,7 @@ from output.speech import SilentSpeech, Speech
 from processing.qualityAssessment import QualityAssessment, STABILITY_THRESHOLD
 
 
-
 QUALITY_CHECK_INTERVAL = 0.5
-
-
 
 
 class SnapPrintController:
@@ -68,8 +65,6 @@ class SnapPrintController:
 
         self.last_quality_check = 0.0
 
-
-
     def start(self, mode="live"):
 
         if self.running:
@@ -95,8 +90,6 @@ class SnapPrintController:
         capture_thread.start()
         self.speech.speak('Ready. Hold the page steady. Press space to stop spoken guidance.')
 
-
-
     def stop(self):
 
         self.running = False
@@ -113,8 +106,6 @@ class SnapPrintController:
                 if future is not None:
                     future.cancel()
         self.speech.close()
-
-
 
     def closeModels(self):
         try:
@@ -162,16 +153,13 @@ class SnapPrintController:
 
             time.sleep(0.05)
 
-
-
     def handleScanning(self, frame):
 
         assessment = self.quality_assessment.assessFrame(frame)
         self.latest_assessment = assessment
         if self.gate_failed:
             return
-        # An inference may take several camera checks. Do not discard its result
-        # for every transient unstable sample; validate the candidate on return.
+        # Keep the pending candidate until detection returns; then check stability.
         if self.gate_pending.is_set():
             return
         self.speech.announceQuality(assessment)
@@ -217,8 +205,7 @@ class SnapPrintController:
                 or self.state != self.SCANNING or self.processing.is_set()):
             return
         if self.latest_frame is not None:
-            # Validate the image actually examined, rather than requiring a
-            # perfectly uninterrupted stable run throughout slow CPU inference.
+            # Compare the candidate with the current frame to reject a moved page.
             candidate = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (320, 240))
             current = cv2.resize(cv2.cvtColor(self.latest_frame, cv2.COLOR_BGR2GRAY), (320, 240))
             moved = float(cv2.absdiff(candidate, current).mean()) >= STABILITY_THRESHOLD
@@ -256,15 +243,12 @@ class SnapPrintController:
             frame.copy()
         )
 
-
-
     def processFrame(self, frame):
 
         try:
             if not self.running:
                 return
 
-            # The reader aligns and conditionally enhances each captured page.
             started = time.monotonic()
             text, _ = self.reader.read(frame, self.two_pages, enhance=self.enhance_images)
             elapsed = time.monotonic() - started
