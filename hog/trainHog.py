@@ -60,7 +60,6 @@ def trainPatchClassifier(data_folder):
 
 
 def tuneImageDecision(model_path, validation_images):
-    """Pick the threshold and region size with the best validation accuracy."""
     gate = HogTextGate(model_path)
     gate.load()
 
