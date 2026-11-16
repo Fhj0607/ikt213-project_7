@@ -12,18 +12,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-snapprint.ps1
 ```
 
 Wait for `Setup completed` before running the launcher. If setup is interrupted, rerun the same `setup.ps1` command.
-
-## Later launches
-
-Open PowerShell in the repository folder and run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run-snapprint.ps1
-```
-
-If automatic CUDA setup fails on your machine, install the CPU configuration and then launch:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -TorchDevice cpu
-powershell -NoProfile -ExecutionPolicy Bypass -File .\run-snapprint.ps1
-```
