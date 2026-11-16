@@ -7,7 +7,7 @@ def toGrayscale(image):
 
 
 def resizeImage(image, width, height):
-    return cv2.resize(image,(width, height))
+    return cv2.resize(image, (width, height))
 
 
 def sharpen(image):

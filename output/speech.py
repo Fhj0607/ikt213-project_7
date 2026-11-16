@@ -1,4 +1,3 @@
-"""Nonblocking Windows speech and short camera/OCR announcements."""
 
 import logging
 import queue
@@ -46,7 +45,6 @@ class Speech:
         self._worker.join(timeout=2)
 
     def _run(self):
-        # COM objects must be created and used on their owning thread.
         import pythoncom
         import win32com.client
 
@@ -60,10 +58,8 @@ class Speech:
                     pythoncom.PumpWaitingMessages()
                     continue
                 if action == 'stop':
-                    voice.Speak('', 3)  # asynchronous + purge queued speech
+                    voice.Speak('', 3)
                 elif interrupt or voice.Status.RunningState != 2:
-                    # Skip noninterrupting speech while the voice is active.
-                    # Flags 17/19 request asynchronous, literal-text speech.
                     voice.Speak(text, 19 if interrupt else 17)
                 pythoncom.PumpWaitingMessages()
             voice.Speak('', 3)
@@ -71,13 +67,11 @@ class Speech:
             self.error = str(error)
             logging.exception('Speech output failed')
         finally:
-            # Release the COM voice before its apartment is uninitialized.
             voice = None
             pythoncom.CoUninitialize()
 
 
 class SilentSpeech:
-    """Speech interface for visual capture modes, without an audio worker."""
     error = None
 
     def speak(self, text, interrupt=False):

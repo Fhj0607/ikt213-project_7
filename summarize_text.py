@@ -1,4 +1,3 @@
-"""Generate a Word document from saved OCR text without starting the camera/UI."""
 import argparse
 from pathlib import Path
 
@@ -6,7 +5,7 @@ from output.document_service import createDocument
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("inputs", nargs="+", type=Path, help="UTF-8 OCR text files, in page order")
     parser.add_argument("-o", "--output", type=Path, help="Destination .docx file")
     args = parser.parse_args()

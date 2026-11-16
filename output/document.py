@@ -1,4 +1,3 @@
-"""A fixed Word template; the model supplies content, never document styling."""
 import re
 from pathlib import Path
 
@@ -12,7 +11,6 @@ HEADINGS = ("Summary", "Key points", "Detailed notes", "Unclear passages", "Orig
 
 
 def cleanText(text):
-    # XML 1.0 cannot store control characters occasionally emitted by OCR.
     return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]", "", text)
 
 
@@ -52,7 +50,9 @@ def writeDocument(summary, pages, destination):
     for passage in summary["unclear_passages"]:
         document.add_paragraph(cleanText(passage), "List Bullet")
     if not summary["unclear_passages"]:
-        document.add_paragraph("No unclear passages flagged by the model. OCR accuracy has not been verified.")
+        document.add_paragraph(
+            "No unclear passages flagged by the model. OCR accuracy has not been verified."
+        )
     document.add_page_break()
     document.add_heading(HEADINGS[4], 1)
     for number, page in enumerate(pages, 1):

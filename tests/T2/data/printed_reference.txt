@@ -1,0 +1,11 @@
+Document Recognition Study
+1. Background
+Printed documents often contain several regions. A reader must preserve both the words and their intended order.
+2. Method
+This page was generated at a fixed resolution with five labeled sections for a repeatable recognition test.
+3. Observations
+The image contains a title, numbered headings, paragraph text, and generous white space between sections.
+4. Limitations
+One clean synthetic page cannot measure accuracy on photographs, unusual fonts, damaged paper, or handwriting.
+5. Conclusion
+Compare the saved transcription with this page and record the recognition time separately from model loading.

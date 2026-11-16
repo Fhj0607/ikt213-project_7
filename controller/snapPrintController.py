@@ -120,7 +120,9 @@ class SnapPrintController:
             try:
                 frame = self.camera.captureFrame()
             except Exception as error:
-                self.scheduleUi(lambda message=str(error): setattr(self.main_screen.status, "text", message))
+                self.scheduleUi(
+                    lambda message=str(error): setattr(self.main_screen.status, "text", message)
+                )
                 return
             self.latest_frame = frame.copy()
 
@@ -159,15 +161,18 @@ class SnapPrintController:
         self.latest_assessment = assessment
         if self.gate_failed:
             return
-        # Keep the pending candidate until detection returns; then check stability.
         if self.gate_pending.is_set():
             return
         self.speech.announceQuality(assessment)
         if not assessment["acceptable"]:
             self.gate_hits = 0
-            self.scheduleUi(lambda: setattr(self.main_screen.status, "text", "Hold your page steady. Waiting for a stable image."))
+            self.scheduleUi(
+                lambda: setattr(
+                    self.main_screen.status, "text",
+                    "Hold your page steady. Waiting for a stable image."
+                )
+            )
             return
-        # Keep inference off both the camera thread and the Kivy UI thread.
         generation = self.gate_generation
         candidate = frame.copy()
         self.gate_pending.set()
@@ -196,7 +201,10 @@ class SnapPrintController:
         self.gate_pending.clear()
         self.gate_failed = True
         self.resetGate()
-        self.main_screen.status.text = "Text detection unavailable. Use Capture now (F) or restart the session. " + message
+        self.main_screen.status.text = (
+            "Text detection unavailable. Use Capture now (F) or restart the session. "
+            + message
+        )
         self.speech.speak("Text detection unavailable. Press F to capture manually.", interrupt=True)
 
     def acceptDetection(self, frame, generation, found):
@@ -205,7 +213,6 @@ class SnapPrintController:
                 or self.state != self.SCANNING or self.processing.is_set()):
             return
         if self.latest_frame is not None:
-            # Compare the candidate with the current frame to reject a moved page.
             candidate = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (320, 240))
             current = cv2.resize(cv2.cvtColor(self.latest_frame, cv2.COLOR_BGR2GRAY), (320, 240))
             moved = float(cv2.absdiff(candidate, current).mean()) >= STABILITY_THRESHOLD
@@ -216,8 +223,11 @@ class SnapPrintController:
                 return
         self.gate_hits = self.gate_hits + 1 if found else 0
         if self.gate_hits < 2:
-            self.main_screen.status.text = ("Text detected. Hold steady to capture." if found else
-                                            "Looking for text. Hold your page steady, or press F to capture manually.")
+            self.main_screen.status.text = (
+                "Text detected. Hold steady to capture."
+                if found
+                else "Looking for text. Hold your page steady, or press F to capture manually."
+            )
             return
         self.state = self.PAUSED
         self.resetGate()
@@ -235,7 +245,9 @@ class SnapPrintController:
             return
         self.processing.set()
         self.speech.speak('Page captured. Reading document.', interrupt=True)
-        self.scheduleUi(lambda: setattr(self.main_screen.status, "text", "Page captured. Reading document..."))
+        self.scheduleUi(
+            lambda: setattr(self.main_screen.status, "text", "Page captured. Reading document...")
+        )
         self.scheduleUi(lambda: self.setBusy(True))
 
         self.processing_future = self.processing_worker.submit(
@@ -281,7 +293,10 @@ class SnapPrintController:
         if text:
             self.pages.append(text)
             self.main_screen.appendOcrText(text)
-            self.main_screen.status.text = "Page added. Click the notes preview to edit, or capture another page."
+            self.main_screen.status.text = (
+                "Page added. Click the notes preview to edit, "
+                "or capture another page."
+            )
         else:
             self.main_screen.status.text = "No readable text found. Try another photo or scan again."
 
@@ -325,7 +340,9 @@ class SnapPrintController:
             return
         if self.capture_thread is None or not self.capture_thread.is_alive():
             self.startCamera()
-            self.main_screen.status.text = "Camera ready. Position your page, then press Take photo again."
+            self.main_screen.status.text = (
+                "Camera ready. Position your page, then press Take photo again."
+            )
         elif self.latest_frame is not None:
             self.submitFrame(self.latest_frame)
 

@@ -22,7 +22,6 @@ SEED = 42
 
 
 def loadTextBoxes(json_path):
-    """File name -> list of COCO-Text boxes (x, y, width, height)."""
     data = json.loads(Path(json_path).read_text(encoding="utf-8"))
 
     boxes = {}
@@ -39,7 +38,6 @@ def loadTextBoxes(json_path):
 
 
 def textMask(frame_shape, gray_shape, boxes):
-    """1 inside text boxes, 0 elsewhere, at the same scale as the HOG windows."""
     mask = np.zeros(frame_shape[:2], np.uint8)
 
     for x, y, width, height in boxes:
@@ -87,7 +85,6 @@ def patchesFromImage(image_path, boxes, rng):
 
 
 def drawLabels(gray, text_positions, non_text_positions):
-    """Green = text patch, red = non-text patch. Check these before training."""
     preview = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
 
     for positions, colour in ((text_positions, (0, 200, 0)), (non_text_positions, (0, 0, 220))):
@@ -99,7 +96,6 @@ def drawLabels(gray, text_positions, non_text_positions):
 
 
 def balanceClasses(patches, labels, image_ids, rng):
-    """Drop random samples from the bigger class so text and non-text are equal."""
     text_index = np.flatnonzero(labels == 1)
     non_text_index = np.flatnonzero(labels == 0)
 
@@ -116,8 +112,13 @@ def balanceClasses(patches, labels, image_ids, rng):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--limit", type=int, default=None, help="only use the first N training images (quick test)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--limit", type=int, default=None,
+        help="only use the first N training images (quick test)"
+    )
     args = parser.parse_args()
 
     from cnn.trainTextCNN import loadDataset

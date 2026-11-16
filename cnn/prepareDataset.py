@@ -15,21 +15,18 @@ def prepareDataset():
 
     dataset_folder.mkdir(parents=True, exist_ok=True)
 
-    # Stream images instead of downloading the entire dataset
     dataset = load_dataset(
         "AbdoTW/COCO_2014",
         split="train",
         streaming=True
     )
 
-    # Keep original image bytes without decoding every image
     dataset = dataset.cast_column("image", Image(decode=False))
 
     text_count = 0
     no_text_count = 0
     target = 5000
 
-    # Prepare a new dataset before deleting the existing one
     with tempfile.TemporaryDirectory(dir="cnn") as temp:
         temp_folder = Path(temp)
 
@@ -42,7 +39,6 @@ def prepareDataset():
         for example in dataset:
             image_id = str(example["id"])
 
-            # Only use images covered by COCO-Text annotations
             image_info = data["imgs"].get(image_id)
 
             if image_info is None:
@@ -69,7 +65,6 @@ def prepareDataset():
             filename = image_info["file_name"]
             destination = destination_folder / filename
 
-            # Get original JPEG data from Hugging Face
             image_data = example["image"]
 
             image_bytes = image_data["bytes"]
@@ -96,7 +91,6 @@ def prepareDataset():
                 f"Text: {text_count}, No text: {no_text_count}"
             )
 
-        # Replace old dataset after successful collection
         old_text = dataset_folder / "text"
         old_no_text = dataset_folder / "noText"
 

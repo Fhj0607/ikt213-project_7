@@ -1,4 +1,3 @@
-"""Application session lifecycle and user-action policy."""
 from kivy.clock import Clock
 
 from controller.snapPrintController import SnapPrintController
@@ -31,10 +30,14 @@ class SessionController:
         self.load_error = None
         self.main_screen.showLoading("Preparing local recognition models...")
         future = self.models.worker.submit(self.models.load, self.loadingProgress)
-        future.add_done_callback(lambda result: Clock.schedule_once(lambda dt: self.modelsLoaded(result)))
+        future.add_done_callback(
+            lambda result: Clock.schedule_once(lambda dt: self.modelsLoaded(result))
+        )
 
     def loadingProgress(self, message):
-        Clock.schedule_once(lambda dt: self.main_screen.showLoading(message) if not self.closed else None)
+        Clock.schedule_once(
+            lambda dt: self.main_screen.showLoading(message) if not self.closed else None
+        )
 
     def modelsLoaded(self, future):
         if self.closed:
@@ -63,7 +66,8 @@ class SessionController:
         self.main_screen.showModes()
 
     def chooseMode(self, mode):
-        if not self.ready or self.closed or mode not in ("live", "photos") or not self.session_active or self.capture:
+        if (not self.ready or self.closed or mode not in ("live", "photos")
+                or not self.session_active or self.capture):
             return
         capture = SnapPrintController(self.main_screen, self.models, gate_type=self.gate_type,
                                       enhance_images=self.enhance_images)
@@ -122,8 +126,9 @@ class SessionController:
         self.main_screen.start_button.disabled = True
         self.main_screen.create_document_button.disabled = True
         self.main_screen.stage.text = "CREATING DOCUMENT"
-        self.main_screen.status.text = "Summarizing your pages and creating a Word document. Please wait."
-        # Reuse the serial worker so unfinished OCR completes before summarization.
+        self.main_screen.status.text = (
+            "Summarizing your pages and creating a Word document. Please wait."
+        )
         future = self.models.worker.submit(createDocument, [session["text"]])
         future.add_done_callback(lambda result: Clock.schedule_once(
             lambda dt: self.documentCreated(session, result)))
@@ -138,7 +143,9 @@ class SessionController:
             summary, path = future.result()
         except Exception as error:
             session["formatting_status"] = "failed"
-            self.showCompletedSession(f"Document creation failed: {error}\nYour OCR text is retained. You can retry.")
+            self.showCompletedSession(
+                f"Document creation failed: {error}\nYour OCR text is retained. You can retry."
+            )
             return
         session.update(formatting_status="complete", summary=summary, document_path=str(path))
         self.showCompletedSession(f"Word document saved:\n{path}")
@@ -148,7 +155,6 @@ class SessionController:
                     and not self.capture.processing.is_set())
 
     def uploadImage(self, owner, path):
-        # A dialog belonging to an old session must never upload to a new one.
         if owner is self.capture and self.canUpload():
             try:
                 self.capture.uploadImage(path)

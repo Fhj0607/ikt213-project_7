@@ -19,8 +19,6 @@ TEXT = (0.94, 0.96, 0.99, 1)
 MUTED = (0.65, 0.72, 0.81, 1)
 ACCENT = (0.27, 0.87, 0.73, 1)
 
-# Sizes are in dp. They are converted at use time (not at import time) so
-# Kivy's window/metrics are fully initialised first.
 BUTTON_HEIGHT = 52
 BUTTON_GAP = 10
 BUTTON_MIN_WIDTH = 240
@@ -50,8 +48,14 @@ class MenuButton(Button):
                          background_color=(0, 0, 0, 0),
                          halign="center", valign="middle", **kwargs)
         self.emphasis = emphasis
-        self.base_color = ACCENT if emphasis else ((0.24, 0.10, 0.14, 1) if danger else (0.12, 0.17, 0.23, 1))
-        self.color = BACKGROUND if emphasis else ((1, 0.74, 0.76, 1) if danger else TEXT)
+        self.base_color = (
+            ACCENT if emphasis
+            else ((0.24, 0.10, 0.14, 1) if danger else (0.12, 0.17, 0.23, 1))
+        )
+        self.color = (
+            BACKGROUND if emphasis
+            else ((1, 0.74, 0.76, 1) if danger else TEXT)
+        )
         self.disabled_color = MUTED
         self.tint = rounded_background(self, self.base_color, 10)
         self.bind(state=self.refresh, disabled=self.refresh, size=self.wrap)
@@ -95,11 +99,10 @@ class MainScreen(BoxLayout):
         self.workspace = BoxLayout(spacing=dp(16))
         self.add_widget(self.workspace)
 
-        # Keep preview children positioned relative to their card.
         self.preview_card = self.card("01  /  CAPTURE", "Camera preview")
         preview = RelativeLayout()
         self.preview_hint = self.hint(PREVIEW_HINT)
-        self.image_display = Image(opacity=0)  # an Image with no texture paints a white box
+        self.image_display = Image(opacity=0)
         self.image_display.bind(texture=self.onPreviewTexture)
         preview.add_widget(self.preview_hint)
         preview.add_widget(self.image_display)
@@ -237,7 +240,10 @@ class MainScreen(BoxLayout):
     def showModes(self):
         self.footer.text = "LOCAL OCR"
         self.stage.text = "CHOOSE A MODE"
-        self.status.text = "How would you like to capture your pages? You can end the session at any time."
+        self.status.text = (
+            "How would you like to capture your pages? "
+            "You can end the session at any time."
+        )
         self.preview_hint.text = PREVIEW_HINT
         self.ocr_text.text = ""
         self.setActions([self.live_button, self.photos_button, self.gate_button,
@@ -252,13 +258,20 @@ class MainScreen(BoxLayout):
     def showCapture(self, mode):
         self.footer.text = "LOCAL OCR    /    Space to stop speech" if mode == "live" else "LOCAL OCR"
         self.stage.text = "LIVE CAPTURE" if mode == "live" else "PHOTOS & FILES"
-        self.status.text = ("Hold your page steady. Spoken guidance will help you position it."
-                            if mode == "live" else "Take a photo or choose an image to add its text to your session.")
-        self.preview_hint.text = ("Waiting for the camera..." if mode == "live"
-                                  else "Photos you take appear here.")
-        self.setActions(([self.scan_again_button, self.force_capture_button] if mode == "live" else
-                         [self.capture_button, self.upload_button]) +
-                        [self.pages_button, self.end_button])
+        self.status.text = (
+            "Hold your page steady. Spoken guidance will help you position it."
+            if mode == "live"
+            else "Take a photo or choose an image to add its text to your session."
+        )
+        self.preview_hint.text = (
+            "Waiting for the camera..." if mode == "live"
+            else "Photos you take appear here."
+        )
+        self.setActions(
+            ([self.scan_again_button, self.force_capture_button] if mode == "live"
+             else [self.capture_button, self.upload_button])
+            + [self.pages_button, self.end_button]
+        )
 
     def displayFrame(self, frame):
 

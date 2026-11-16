@@ -1,4 +1,3 @@
-"""Schema-constrained, CPU-only summaries through the local Ollama API."""
 import json
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -33,7 +32,6 @@ Return only JSON matching this schema:
 
 
 def validateSummary(data):
-    """Reject malformed model output before it reaches the document writer."""
 
     def strings(value):
         return isinstance(value, list) and all(
@@ -58,13 +56,11 @@ def validateSummary(data):
 
 
 def splitText(text, max_bytes=2000):
-    """Bound input even for non-ASCII OCR; retain every character in order."""
     remaining = text.encode("utf-8")
     while remaining:
         chunk = remaining[:max_bytes].decode("utf-8", errors="ignore")
         if not chunk:
             raise ValueError("Chunk size is too small for the source text.")
-        # Prefer a word boundary without allowing a very small chunk.
         boundary = chunk.rfind(" ")
         if len(chunk.encode("utf-8")) < len(remaining) and boundary > len(chunk) // 2:
             chunk = chunk[:boundary + 1]
@@ -82,11 +78,12 @@ class LocalSummarizer:
             raise ValueError("No OCR text was collected.")
         summaries = [self._summarizeChunk(chunk)
                      for page in pages for chunk in splitText(page) if chunk.strip()]
-        # Keep all chunk notes rather than silently truncating a long session.
         return validateSummary({
             "title": summaries[0]["title"] if len(summaries) == 1 else "Collected document notes",
             "summary": "\n\n".join(item["summary"] for item in summaries),
-            "key_points": list(dict.fromkeys(point for item in summaries for point in item["key_points"])),
+            "key_points": list(dict.fromkeys(
+                point for item in summaries for point in item["key_points"]
+            )),
             "sections": [section for item in summaries for section in item["sections"]],
             "unclear_passages": [passage for item in summaries for passage in item["unclear_passages"]],
         })

@@ -1,4 +1,3 @@
-"""App-lifetime models and a shared serial inference worker."""
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -33,7 +32,6 @@ class ModelService:
         raise ValueError(f"Unknown text filter: {gate_type}")
 
     def load(self, progress):
-        # Preload the reader. The selected gate loads on its first detection.
         progress("Loading document recognition models...")
         self.reader.load()
 

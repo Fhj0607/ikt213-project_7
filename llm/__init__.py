@@ -1,1 +1,0 @@
-"""Local OCR text summarization."""

@@ -13,7 +13,6 @@ REQUIRED_STABLE_FRAMES = 3
 
 
 def assessImage(image):
-    """Measure one image without changing the live camera's stability history."""
     gray_image = image if image.ndim == 2 else toGrayscale(image)
     sharpness_score = cv2.Laplacian(gray_image, cv2.CV_64F).var()
     brightness_score = np.mean(gray_image)

@@ -130,7 +130,7 @@ if ($PythonPath) { $PythonPath = (Resolve-Path -LiteralPath $PythonPath).Path }
 if ($TrainHog -and -not $CheckOnly) {
     foreach ($required in @('cnn/datasets/raw/cocotext.v2.json', 'cnn/datasets/text', 'cnn/datasets/noText')) {
         if (-not (Test-Path -LiteralPath (Join-Path $projectRoot $required))) {
-            throw "HOG training requires prepared data: $required. See SETUP.md."
+            throw "HOG training requires prepared data: $required."
         }
     }
 }

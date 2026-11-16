@@ -1,4 +1,3 @@
-"""Read a saved image locally without starting the camera or speech UI."""
 
 import argparse
 from pathlib import Path
@@ -10,11 +9,14 @@ from ocr.vl_reader import VLReader
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument('image', type=Path)
     parser.add_argument('--device', default='gpu:0', choices=['gpu:0', 'cpu'])
     parser.add_argument('--two-pages', action='store_true')
-    parser.add_argument('--enhance', action='store_true', help='apply conditional brightness, sharpening, and contrast corrections')
+    parser.add_argument(
+        '--enhance', action='store_true',
+        help='apply conditional brightness, sharpening, and contrast corrections'
+    )
     parser.add_argument('--max-pixels', type=int, default=1003520)
     parser.add_argument('--max-tokens', type=int, default=2048)
     parser.add_argument('--output', type=Path, default=Path('results/vl-output.md'))

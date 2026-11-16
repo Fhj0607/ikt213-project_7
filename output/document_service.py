@@ -1,4 +1,3 @@
-"""Shared document generation for the desktop application and CLI."""
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4

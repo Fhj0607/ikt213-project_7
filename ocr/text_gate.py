@@ -1,4 +1,3 @@
-"""Lazy CPU text detection for live capture; never performs recognition."""
 from pathlib import Path
 import os
 
@@ -30,7 +29,8 @@ class TextGate:
         for result in self.model.predict(image, batch_size=1, limit_side_len=self.max_side,
                                          limit_type="max", box_thresh=self.score_threshold):
             for polygon, score in zip(result["dt_polys"], result["dt_scores"]):
-                if float(score) >= self.score_threshold and abs(cv2.contourArea(polygon.astype("float32"))) >= 16:
+                if (float(score) >= self.score_threshold
+                        and abs(cv2.contourArea(polygon.astype("float32"))) >= 16):
                     regions += 1
         return regions >= self.min_regions
 

@@ -1,4 +1,3 @@
-"""Verify an installation without opening the UI or accessing the camera."""
 import argparse
 import importlib
 import os
@@ -10,7 +9,9 @@ import json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-os.environ.setdefault("KIVY_HOME", str(ROOT / "results/setup/kivy"))
+KIVY_HOME = ROOT / "results/setup/kivy"
+KIVY_HOME.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("KIVY_HOME", str(KIVY_HOME))
 os.environ.setdefault("KIVY_NO_ARGS", "1")
 
 
@@ -25,10 +26,13 @@ def verify(args):
     os.environ["SNAPPRINT_OCR_DEVICE"] = "gpu:0" if args.device == "cuda" else "cpu"
     if args.device == "cuda":
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA is unavailable. Check the NVIDIA driver or rerun setup with -TorchDevice cpu.")
+            raise RuntimeError(
+                "CUDA is unavailable. Check the NVIDIA driver or rerun setup with -TorchDevice cpu."
+            )
         if not torch.cuda.is_bf16_supported():
-            raise RuntimeError("This GPU cannot run the app's bfloat16 OCR settings. Rerun setup with -TorchDevice cpu.")
-        # Trigger a small allocation/operation to catch driver or architecture issues.
+            raise RuntimeError(
+                "This GPU cannot run the app's bfloat16 OCR settings. Rerun setup with -TorchDevice cpu."
+            )
         result = (torch.ones((2, 2), device="cuda", dtype=torch.bfloat16) @
                   torch.ones((2, 2), device="cuda", dtype=torch.bfloat16))
         assert result.cpu().float().sum().item() == 8
@@ -58,7 +62,6 @@ def verify(args):
         models.reader = VLReader(device="gpu:0" if args.device == "cuda" else "cpu")
         try:
             models.load(lambda message: print(message, flush=True))
-            # Explicit setup prefetch; normal app startup leaves gates lazy.
             models.getGate("detector").load()
             print("OCR detector and recognition models loaded.", flush=True)
         finally:
@@ -69,7 +72,9 @@ def verify(args):
         with urlopen("http://localhost:11434/api/tags", timeout=10) as response:
             names = {model["name"] for model in json.load(response)["models"]}
         if not names.intersection({"snapprint-summary", "snapprint-summary:latest"}):
-            raise RuntimeError("Ollama does not contain snapprint-summary. Rerun setup without -SkipLlm.")
+            raise RuntimeError(
+                "Ollama does not contain snapprint-summary. Rerun setup without -SkipLlm."
+            )
         print("Ollama model registered.", flush=True)
 
     from output.document import writeDocument
@@ -92,7 +97,7 @@ def verify(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("--device", choices=("cpu", "cuda"), required=True)
     parser.add_argument("--preload-ocr", action="store_true")
     parser.add_argument("--check-llm", action="store_true")

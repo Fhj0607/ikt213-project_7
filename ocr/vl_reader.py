@@ -1,4 +1,3 @@
-"""Local PaddleOCR-VL reader; load explicitly or on the first read."""
 
 import os
 import re
@@ -12,7 +11,6 @@ from processing.processingPipeline import processImage
 
 
 class _TextContent(HTMLParser):
-    """Keep readable content, excluding image markup and HTML attributes."""
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -70,7 +68,6 @@ class VLReader:
     def load(self):
         if self.pipeline is not None:
             return
-        # Use project-local caches unless the environment specifies another location.
         root = Path(__file__).resolve().parents[1]
         os.environ.setdefault('PADDLE_PDX_CACHE_HOME', str(root / '.models' / 'paddlex'))
         os.environ.setdefault('HF_HOME', str(root / '.models' / 'huggingface'))
@@ -110,7 +107,6 @@ class VLReader:
     def read(self, image, two_pages=False, enhance=False):
         self.load()
         start = time.perf_counter()
-        # Explicit two-page mode assumes a centered, vertical page divide.
         pages = [image]
         if two_pages:
             middle = image.shape[1] // 2
@@ -123,8 +119,6 @@ class VLReader:
                 max_new_tokens=self.max_tokens, use_queues=False,
                 use_ocr_for_image_block=True,
             )
-            # Markdown exports render image regions as <img> placeholders, even
-            # when their raw block content contains a useful OCR transcription.
             blocks = [
                 readable_text(block.content)
                 for result in results

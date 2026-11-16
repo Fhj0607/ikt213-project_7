@@ -20,7 +20,6 @@ class HogTextGate:
     def __init__(self, model_path=DEFAULT_MODEL, probability_threshold=None, min_region_windows=None):
         self.model_path = Path(model_path)
 
-        # None uses saved thresholds, with defaults for older model files.
         self.probability_threshold = probability_threshold
         self.min_region_windows = min_region_windows
 
@@ -31,7 +30,9 @@ class HogTextGate:
             return
 
         if not self.model_path.exists():
-            raise RuntimeError(f"HOG model not found at {self.model_path}. Run python -m hog.trainHog first.")
+            raise RuntimeError(
+                f"HOG model not found at {self.model_path}. Run python -m hog.trainHog first."
+            )
 
         saved = joblib.load(self.model_path)
 
@@ -44,13 +45,11 @@ class HogTextGate:
             self.min_region_windows = saved.get("min_region_windows", 12)
 
     def predictPatches(self, patches):
-        """Probability of text for each (PATCH_SIZE x PATCH_SIZE) grayscale patch."""
         self.load()
 
         return self.model.predict_proba(hogFeatures(patches))[:, 1]
 
     def textMap(self, frame):
-        """Text probability for every sliding window, as a (rows, cols) grid."""
         gray = prepareFrame(frame)
 
         windows = slidingWindows(gray)
@@ -62,17 +61,11 @@ class HogTextGate:
         return probabilities.reshape(rows, cols), gray
 
     def textWindows(self, probabilities):
-        """Threshold the grid, then drop isolated hits.
-
-        Text runs horizontally, so a morphological opening with a 1x2 kernel
-        keeps only windows that have a text neighbour beside them.
-        """
         binary = (probabilities >= self.probability_threshold).astype(np.uint8)
 
         return cv2.morphologyEx(binary, cv2.MORPH_OPEN, np.ones((1, 2), np.uint8))
 
     def regionSizes(self, probabilities):
-        """Connected groups of text windows: label image and size of each group."""
         windows = self.textWindows(probabilities)
 
         count, labels, stats, _ = cv2.connectedComponentsWithStats(windows, connectivity=8)
@@ -84,7 +77,6 @@ class HogTextGate:
         return int(sizes.max()) if len(sizes) else 0
 
     def textRegions(self, probabilities):
-        """Keep connected groups that meet the minimum window count."""
         labels, sizes = self.regionSizes(probabilities)
 
         keep_labels = np.flatnonzero(sizes >= self.min_region_windows) + 1
@@ -99,7 +91,6 @@ class HogTextGate:
         return self.largestRegion(probabilities) >= self.min_region_windows
 
     def drawDetections(self, frame):
-        """Frame (scaled like the detector sees it) with text regions shaded green."""
         self.load()
 
         probabilities, gray = self.textMap(frame)

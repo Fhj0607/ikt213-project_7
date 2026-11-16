@@ -101,10 +101,15 @@ def tuneImageDecision(model_path, validation_images):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--data", default=str(OUTPUT_FOLDER))
     parser.add_argument("--out", default=str(DEFAULT_MODEL))
-    parser.add_argument("--validation-limit", type=int, default=None, help="tune on fewer images (quick test)")
+    parser.add_argument(
+        "--validation-limit", type=int, default=None,
+        help="tune on fewer images (quick test)"
+    )
     args = parser.parse_args()
 
     start = time.perf_counter()

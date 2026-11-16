@@ -16,8 +16,9 @@ experiments/
 results/
 images/
 
-# Local verification scripts and artifacts
-tests/
+# Generated test artifacts
+tests/**/results/
+tests/T2/data/iam_000_a01-000u_handwritten.png
 test/
 
 # Local model directories and virtual environments
