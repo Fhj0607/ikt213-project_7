@@ -5,8 +5,6 @@ PATCH_SIZE = 32
 WINDOW_STRIDE = 16
 MAX_SIDE = 960
 
-# 32x32 window, 16x16 blocks (2x2 cells), block stride 8, 8x8 cells, 9 orientation bins
-# -> 3x3 block positions * 4 cells * 9 bins = 324 features per patch
 HOG = cv2.HOGDescriptor(
     (PATCH_SIZE, PATCH_SIZE),
     (16, 16),
@@ -17,7 +15,6 @@ HOG = cv2.HOGDescriptor(
 
 
 def prepareFrame(frame):
-    """Convert to grayscale and scale, keeping each side at least PATCH_SIZE."""
     if frame.ndim == 3:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -34,7 +31,6 @@ def prepareFrame(frame):
 
 
 def slidingWindows(image):
-    """View of every window as a (rows, cols, PATCH_SIZE, PATCH_SIZE) array."""
     windows = np.lib.stride_tricks.sliding_window_view(
         image,
         (PATCH_SIZE, PATCH_SIZE)
@@ -44,7 +40,6 @@ def slidingWindows(image):
 
 
 def hogFeatures(patches):
-    """HOG vector for each patch in an (N, PATCH_SIZE, PATCH_SIZE) uint8 array."""
     return np.stack([
         HOG.compute(np.ascontiguousarray(patch)).ravel()
         for patch in patches
